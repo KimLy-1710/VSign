@@ -1,0 +1,2 @@
+# mediapipe kéo theo numpy và opencv-contrib-python (đã có cửa sổ hiển thị).
+mediapipe==1.2.3

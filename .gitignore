@@ -1,0 +1,17 @@
+# Documents (reports, plans) - kept out of the repo
+*.docx
+*.xlsx
+*.pdf
+backup_truoc_chinh_sua/
+
+# Large / regenerable data
+data/
+models/
+*.task
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
