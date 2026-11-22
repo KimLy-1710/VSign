@@ -26,6 +26,7 @@ const S = {
   saved: [],             // tên các lượt lưu trong phiên này (để xóa lượt cuối)
   hand: null, pose: null, lastTs: 0, lastDetect: -1e9, hr: null, pr: null, handOn: false, poseOn: false, wakeLock: null,
   stream: null, message: "", tMessage: 0,
+  refs: null, refSlug: null, showRef: true,   // video mẫu (references.json)
 };
 
 // ---------------------------------------------------------------- tiện ích
@@ -328,11 +329,34 @@ async function finishTake(now) {
   renderList();
 }
 
+// Video mẫu ViSL của ký hiệu hiện tại (lật như gương trong CSS) và link tham khảo QIPEDC.
+function showReference(l) {
+  S.refSlug = l.slug;
+  const r = S.refs?.signs?.[l.slug];
+  const v = $("ref");
+  if (r) { v.src = r.video; v.play().catch(() => {}); } else v.removeAttribute("src");
+  const links = $("ref-links");
+  links.replaceChildren();
+  if (r?.links?.length) {
+    links.append("Tham khảo thêm (có thể khác biến thể, ưu tiên làm theo video mẫu): ");
+    r.links.forEach((k, i) => {
+      const a = document.createElement("a");
+      Object.assign(a, { href: k.url, target: "_blank", rel: "noopener", textContent: k.label });
+      if (i) links.append(" · ");
+      links.append(a);
+    });
+  }
+}
+
 function render(now) {
   const l = label();
   $("sign-name").textContent = l.text;
   $("sign-count").textContent = `Ký hiệu ${pad(l.id)}/${S.labels.length} · đã quay ${mine()}/${S.quota}`;
   const vp = $("viewport");
+  if (l.slug !== S.refSlug) showReference(l);
+  const hasRef = !!S.refs?.signs?.[l.slug];
+  $("ref-box").hidden = !hasRef || !S.showRef || S.state === "recording";   // ẩn khi quay để người quay nhìn thẳng camera
+  $("ref-toggle").hidden = !hasRef || S.state === "recording";
   vp.classList.toggle("recording", S.state === "recording");
   vp.classList.toggle("countdown", S.state === "countdown");
   $("big").textContent = S.state === "countdown" ? Math.ceil(CONFIG.countdown - (now - S.tState) / 1000)
@@ -456,6 +480,17 @@ async function main() {
   try { S.labels = (await (await fetch("labels.json")).json()).sort((a, b) => a.id - b.id); }
   catch (e) { $("setup-error").textContent = `Không tải được labels.json: ${e.message}`; $("setup-error").hidden = false; return; }
   await Queue.open();
+  try {
+    S.refs = await (await fetch("references.json")).json();
+    $("credit").innerHTML = `Video mẫu: <a href="${S.refs.source_url}" target="_blank" rel="noopener">${S.refs.source}</a>`;
+  } catch { S.refs = null; }   // thiếu video mẫu vẫn quay được
+  try { S.showRef = localStorage.getItem("vsign-hide-ref") !== "1"; } catch {}
+  $("ref-toggle").onclick = () => {
+    S.showRef = !S.showRef;
+    $("ref-toggle").textContent = S.showRef ? "Ẩn mẫu" : "Xem mẫu";
+    try { localStorage.setItem("vsign-hide-ref", S.showRef ? "0" : "1"); } catch {}
+  };
+  $("ref-toggle").textContent = S.showRef ? "Ẩn mẫu" : "Xem mẫu";
   restoreSetup();
   if (IN_APP) { $("inapp").textContent = IN_APP_HELP; $("inapp").hidden = false; }
   if (IS_TOUCH) document.body.classList.add("touch");

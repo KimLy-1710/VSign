@@ -51,6 +51,11 @@
           <span id="pose-flag" class="flag">Người</span>
           <span id="message"></span>
         </div>
+        <figure id="ref-box" class="ref-box" hidden>
+          <video id="ref" muted loop playsinline autoplay></video>
+          <figcaption>Mẫu · làm giống hình</figcaption>
+        </figure>
+        <button id="ref-toggle" class="ref-toggle" hidden>Ẩn mẫu</button>
       </div>
       <div class="controls">
         <button id="prev" title="Ký hiệu trước (←)">◀</button>
@@ -59,12 +64,14 @@
         <button id="undo" title="Xóa lượt vừa lưu (D)">Xóa lượt cuối</button>
         <select id="camera" title="Chọn camera"></select>
       </div>
+      <div id="ref-links" class="ref-links"></div>
       <div id="upload" class="upload"></div>
     </section>
     <aside class="list card">
       <h2>Tiến độ <span id="progress"></span></h2>
       <ol id="signs"></ol>
       <button id="change" class="link">Đổi người quay / buổi</button>
+      <p id="credit" class="credit"></p>
     </aside>
   </main>
 

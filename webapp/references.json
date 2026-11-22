@@ -1,0 +1,267 @@
+{
+ "source": "ViSignLanguage-Video (star092304, AI Challenge PTIT), CC BY 4.0",
+ "source_url": "https://huggingface.co/datasets/star092304/ViSignLanguage-Video",
+ "signs": {
+  "chao": {
+   "video": "ref/chao.mp4",
+   "visl_file": "dataset/train/Chào/213346.mp4",
+   "hand_ratio": 1.0,
+   "links": [
+    {
+     "label": "QIPEDC: chào",
+     "url": "https://qipedc.moet.gov.vn/videos/W00489.mp4"
+    }
+   ]
+  },
+  "cam_on": {
+   "video": "ref/cam_on.mp4",
+   "visl_file": "dataset/train/Cảm ơn/482364.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "dong_y": {
+   "video": "ref/dong_y.mp4",
+   "visl_file": "dataset/train/Đồng ý/250647.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "moi_vao": {
+   "video": "ref/moi_vao.mp4",
+   "visl_file": "dataset/train/Mời vào/251668.mp4",
+   "hand_ratio": 1.0,
+   "links": [
+    {
+     "label": "QIPEDC: mời",
+     "url": "https://qipedc.moet.gov.vn/videos/W02263.mp4"
+    }
+   ]
+  },
+  "giup": {
+   "video": "ref/giup.mp4",
+   "visl_file": "dataset/train/Giúp/197573.mp4",
+   "hand_ratio": 1.0,
+   "links": [
+    {
+     "label": "QIPEDC: giúp đỡ (Bắc)",
+     "url": "https://qipedc.moet.gov.vn/videos/W01497B.mp4"
+    },
+    {
+     "label": "QIPEDC: giúp đỡ (Trung)",
+     "url": "https://qipedc.moet.gov.vn/videos/W01497T.mp4"
+    },
+    {
+     "label": "QIPEDC: giúp đỡ (Nam)",
+     "url": "https://qipedc.moet.gov.vn/videos/W01497N.mp4"
+    }
+   ]
+  },
+  "xin_phep": {
+   "video": "ref/xin_phep.mp4",
+   "visl_file": "dataset/train/Xin phép/186624.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "toi": {
+   "video": "ref/toi.mp4",
+   "visl_file": "dataset/train/Tôi/145814.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "ho": {
+   "video": "ref/ho.mp4",
+   "visl_file": "dataset/train/Họ/256445.mp4",
+   "hand_ratio": 1.0,
+   "links": [
+    {
+     "label": "QIPEDC: họ (đại từ)",
+     "url": "https://qipedc.moet.gov.vn/videos/D0137.mp4"
+    }
+   ]
+  },
+  "dau": {
+   "video": "ref/dau.mp4",
+   "visl_file": "dataset/train/Đâu/168093.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "an": {
+   "video": "ref/an.mp4",
+   "visl_file": "dataset/train/Ăn/148050.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "uong": {
+   "video": "ref/uong.mp4",
+   "visl_file": "dataset/train/Uống/189772.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "di": {
+   "video": "ref/di.mp4",
+   "visl_file": "dataset/train/Đi/129751.mp4",
+   "hand_ratio": 1.0,
+   "links": [
+    {
+     "label": "QIPEDC: đi",
+     "url": "https://qipedc.moet.gov.vn/videos/W01190.mp4"
+    }
+   ]
+  },
+  "chay": {
+   "video": "ref/chay.mp4",
+   "visl_file": "dataset/train/Chạy/233470.mp4",
+   "hand_ratio": 1.0,
+   "links": [
+    {
+     "label": "QIPEDC: chạy",
+     "url": "https://qipedc.moet.gov.vn/videos/W00501.mp4"
+    }
+   ]
+  },
+  "nghe": {
+   "video": "ref/nghe.mp4",
+   "visl_file": "dataset/train/Nghe/130353.mp4",
+   "hand_ratio": 1.0,
+   "links": [
+    {
+     "label": "QIPEDC: nghe",
+     "url": "https://qipedc.moet.gov.vn/videos/W02353.mp4"
+    }
+   ]
+  },
+  "nhin": {
+   "video": "ref/nhin.mp4",
+   "visl_file": "dataset/train/Nhìn/194689.mp4",
+   "hand_ratio": 1.0,
+   "links": [
+    {
+     "label": "QIPEDC: nhìn",
+     "url": "https://qipedc.moet.gov.vn/videos/W02499.mp4"
+    }
+   ]
+  },
+  "noi": {
+   "video": "ref/noi.mp4",
+   "visl_file": "dataset/train/Nói/163491.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "biet": {
+   "video": "ref/biet.mp4",
+   "visl_file": "dataset/train/Biết/677057.mp4",
+   "hand_ratio": 0.87,
+   "links": []
+  },
+  "nho": {
+   "video": "ref/nho.mp4",
+   "visl_file": "dataset/train/Nhớ/166287.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "mua": {
+   "video": "ref/mua.mp4",
+   "visl_file": "dataset/train/Mua/145767.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "nghi_ngoi": {
+   "video": "ref/nghi_ngoi.mp4",
+   "visl_file": "dataset/train/Nghỉ ngơi/109853.mp4",
+   "hand_ratio": 1.0,
+   "links": [
+    {
+     "label": "QIPEDC: nghỉ ngơi",
+     "url": "https://qipedc.moet.gov.vn/videos/W02364.mp4"
+    }
+   ]
+  },
+  "thuc_day": {
+   "video": "ref/thuc_day.mp4",
+   "visl_file": "dataset/train/Thức dậy/119116.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "cham_lai": {
+   "video": "ref/cham_lai.mp4",
+   "visl_file": "dataset/train/Chậm lại/125611.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "nha": {
+   "video": "ref/nha.mp4",
+   "visl_file": "dataset/train/Nhà/134985.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "truong_hoc": {
+   "video": "ref/truong_hoc.mp4",
+   "visl_file": "dataset/train/Trường học/119927.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "benh_vien": {
+   "video": "ref/benh_vien.mp4",
+   "visl_file": "dataset/train/Bệnh viện/354801.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "hom_nay": {
+   "video": "ref/hom_nay.mp4",
+   "visl_file": "dataset/train/Hôm nay/147726.mp4",
+   "hand_ratio": 1.0,
+   "links": []
+  },
+  "trua": {
+   "video": "ref/trua.mp4",
+   "visl_file": "dataset/train/Trưa/129556.mp4",
+   "hand_ratio": 1.0,
+   "links": [
+    {
+     "label": "QIPEDC: buổi trưa (Bắc)",
+     "url": "https://qipedc.moet.gov.vn/videos/W00370B.mp4"
+    },
+    {
+     "label": "QIPEDC: buổi trưa (Trung)",
+     "url": "https://qipedc.moet.gov.vn/videos/W00370T.mp4"
+    },
+    {
+     "label": "QIPEDC: buổi trưa (Nam)",
+     "url": "https://qipedc.moet.gov.vn/videos/W00370N.mp4"
+    }
+   ]
+  },
+  "chieu": {
+   "video": "ref/chieu.mp4",
+   "visl_file": "dataset/train/Chiều/239816.mp4",
+   "hand_ratio": 1.0,
+   "links": [
+    {
+     "label": "QIPEDC: buổi chiều",
+     "url": "https://qipedc.moet.gov.vn/videos/W00366.mp4"
+    }
+   ]
+  },
+  "cuu": {
+   "video": "ref/cuu.mp4",
+   "visl_file": "dataset/train/Cứu/219946.mp4",
+   "hand_ratio": 1.0,
+   "links": [
+    {
+     "label": "QIPEDC: cứu",
+     "url": "https://qipedc.moet.gov.vn/videos/W00947.mp4"
+    }
+   ]
+  },
+  "khoc": {
+   "video": "ref/khoc.mp4",
+   "visl_file": "dataset/train/Khóc/464863.mp4",
+   "hand_ratio": 1.0,
+   "links": [
+    {
+     "label": "QIPEDC: khóc",
+     "url": "https://qipedc.moet.gov.vn/videos/W01821.mp4"
+    }
+   ]
+  }
+ }
+}
