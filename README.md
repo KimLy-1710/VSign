@@ -27,7 +27,10 @@ Webcam ──► Camera node ──► MQTT broker ──► Inference service �
 | Keypoint extraction (`keypoints.py`) | ✅ Done |
 | Webcam data collection tool (`collect_data.py`) | ✅ Done |
 | ViSignLanguage-Video preprocessing (`prepare_visl.py`) | ✅ Done: 970 samples for 30 signs |
-| Model training (LSTM / GRU / Transformer) | 🚧 In progress |
+| Training pipeline (`train.py`, `features.py`) | ✅ Done: LSTM / GRU / Transformer, TFLite export |
+| Remote collection web app (`webapp/`, `import_web_takes.py`) | ✅ Built, not deployed yet |
+| Self-recorded data (2 signers × 2 sessions) | 🚧 To record |
+| Trained model (≥ 85% on session-2 test) | 🚧 Waiting for data |
 | MQTT nodes, ESP32 firmware, Node-RED dashboard | 🚧 In progress |
 
 ## Vocabulary
@@ -84,6 +87,14 @@ Keys in the recording window:
 
 Output goes to `data/raw/<id>_<slug>/` and each take is logged in `data/manifest.csv`.
 
+### Record remotely with the web app
+
+Members who are far apart can record in the browser: each take is uploaded straight to a shared Google Drive folder, then imported on the training machine with the same MediaPipe pipeline. Setup and member instructions: [`webapp/README.md`](webapp/README.md).
+
+```bash
+python import_web_takes.py --src "<synced Drive folder>"   # zip per take → data/raw + data/manifest.csv
+```
+
 ### Preprocess ViSignLanguage-Video
 
 Download `dataset.zip` from [ViSignLanguage-Video on Hugging Face](https://huggingface.co/datasets/star092304/ViSignLanguage-Video) (CC-BY-4.0) into `data/external/visl_download/`, then run:
@@ -95,6 +106,26 @@ python prepare_visl.py --report                                         # per-cl
 
 The script drops corrupted single-color frames, merges duplicate videos, extracts keypoints, resamples each video to 30 frames, and rejects samples where hands or body are rarely visible. Output goes to `data/external/visl_keypoints/`.
 
+### Train the models
+
+```bash
+pip install -r requirements-train.txt
+python train.py --model lstm --features pose_hands   # one experiment
+python train.py --all                                # 3 models × 2 feature sets = 6 experiments
+```
+
+`train.py` reads ViSL keypoints from `data/external/visl_keypoints/` and your recordings from `data/manifest.csv`.
+
+- **Test set:** session 2 recordings, which are never seen during training. Until those exist, 15% of ViSL is held out instead, and a warning is printed.
+- **Validation set:** 15% of the remaining data (ViSL + session 1), split per sign.
+- **Feature sets:** `full` (1662 numbers) or `pose_hands` (258, no face).
+- **Normalization:** keypoints are centered on the shoulders and scaled by shoulder width.
+- **Augmentation:** time stretch, scale, shift, small rotation, noise, and mirroring (`pose_hands` only).
+
+Each run is saved to `runs/<time>_<model>_<features>/`: `model.keras`, `model.tflite`, `config.json`, `metrics.json`, `confusion_matrix.png`, and `classification_report.txt`. All runs are compared in `runs/results.csv`.
+
+> The inference service must call `features.preprocess(seq, config["features"])` on each (30, 1662) sequence before the model, exactly as in training.
+
 ## Project structure
 
 ```
@@ -102,10 +133,16 @@ VSign/
 ├── keypoints.py       # MediaPipe Holistic feature extraction (shared by all tools)
 ├── collect_data.py    # Webcam recording tool
 ├── prepare_visl.py    # ViSignLanguage-Video → keypoints
+├── import_web_takes.py # Web app takes (zip on Drive) → keypoints
+├── webapp/            # Browser collection tool + Apps Script upload endpoint (GitHub Pages)
+├── features.py        # Normalization, feature sets, augmentation (training + inference)
+├── train.py           # Train / compare LSTM, GRU, Transformer; export TFLite
 ├── labels.json        # The 30 signs
 ├── requirements.txt
+├── requirements-train.txt
 ├── data/              # Not in git (datasets and keypoints)
-└── models/            # Not in git (downloaded automatically)
+├── models/            # Not in git (downloaded automatically)
+└── runs/              # Not in git (training results)
 ```
 
 ## Tech stack

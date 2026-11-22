@@ -7,6 +7,7 @@ backup_truoc_chinh_sua/
 # Large / regenerable data
 data/
 models/
+runs/
 *.task
 
 # Python
@@ -15,3 +16,7 @@ __pycache__/
 .venv/
 venv/
 .env
+
+# Bản sao labels.json khi thử web app trên máy (bản deploy được sao chép tự động)
+webapp/labels.json
+.DS_Store

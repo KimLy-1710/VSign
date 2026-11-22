@@ -1,0 +1,5 @@
+# Huấn luyện mô hình (train.py) — không cần MediaPipe/OpenCV.
+# TensorFlow ≥ 2.16 có sẵn bản cho Mac Apple Silicon (chạy CPU, không cần tensorflow-metal).
+tensorflow>=2.16
+scikit-learn
+matplotlib

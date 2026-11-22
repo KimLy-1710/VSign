@@ -13,6 +13,7 @@ Làm khác đi thì đặc trưng sẽ lệch so với dữ liệu train.
 """
 from __future__ import annotations
 
+import os
 import urllib.request
 from pathlib import Path
 
@@ -44,7 +45,7 @@ def ensure_model(model_path: Path = DEFAULT_MODEL_PATH) -> Path:
     if not model_path.exists():
         model_path.parent.mkdir(parents=True, exist_ok=True)
         print(f"Đang tải model MediaPipe Holistic về {model_path} ...")
-        tmp = model_path.with_suffix(".part")
+        tmp = model_path.with_suffix(f".{os.getpid()}.part")    # file tạm riêng: nhiều tiến trình có thể tải cùng lúc
         urllib.request.urlretrieve(MODEL_URL, tmp)
         tmp.replace(model_path)
     return model_path
