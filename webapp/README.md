@@ -48,12 +48,17 @@ Không cài Drive cho máy tính thì tải thư mục về dạng zip, giải n
 
 ## Hướng dẫn cho thành viên
 
-1. Mở link nhóm gửi bằng Chrome, Edge hoặc Safari trên laptop, rồi cho phép dùng camera.
-2. Nhập tên (dùng đúng một tên cho cả hai buổi), chọn buổi quay, nhập mã nhóm.
-3. Đứng sao cho thấy rõ mặt, hai vai và hai tay trong khung vuông, đủ sáng, chỉ một người trong khung.
-4. Bấm **Space** để quay. App tự đếm ngược, quay đủ số lượt rồi chuyển sang ký hiệu tiếp theo. Bấm **D** để xóa lượt vừa quay nếu làm sai. Dùng **← / →** để chọn ký hiệu.
-5. Chờ dòng "Mọi lượt đã lưu lên Drive ✓" rồi mới đóng tab.
+Quay bằng camera có sẵn của máy: camera laptop, hoặc camera trước của điện thoại.
+
+1. Mở link bằng **Chrome / Edge / Safari** trên laptop, hoặc **Chrome (Android) / Safari (iPhone)** trên điện thoại.
+   - Nếu nhận link qua Zalo/Messenger: bấm ⋯ → **Mở bằng trình duyệt**. Trình duyệt bên trong Zalo/Messenger thường không cho dùng camera.
+2. Nhập tên (dùng đúng một tên cho cả hai buổi), chọn buổi quay, nhập mã nhóm, rồi cho phép dùng camera.
+3. Điện thoại: dựng máy cố định (giá đỡ hoặc tựa vào vật), dùng camera trước, không cầm tay. Đặt máy cách 1–1,5 m để thấy rõ mặt, hai vai và hai tay trong khung vuông. Đủ sáng, chỉ một người trong khung.
+4. Bấm **Bắt đầu quay** (laptop: phím **Space**). App tự đếm ngược, quay đủ số lượt rồi chuyển sang ký hiệu tiếp theo. Làm sai thì bấm **Xóa lượt cuối** (phím **D**). Bấm ◀ / ▶ hoặc chọn trong danh sách để đổi ký hiệu.
+5. Không chuyển sang app hay tab khác trong lúc quay: lượt đang quay sẽ bị bỏ. Chờ dòng "Mọi lượt đã lưu lên Drive ✓" rồi mới đóng trang.
 6. Buổi 2 quay vào ngày khác, đổi trang phục, nền và ánh sáng.
+
+Nếu báo lỗi camera, app sẽ hiện hướng dẫn cụ thể (cấp quyền, đóng ứng dụng đang dùng camera, mở bằng trình duyệt khác). Máy quá chậm (dưới 9 khung/giây) thì lượt bị loại; đóng bớt ứng dụng hoặc dùng máy khác.
 
 ## Thử trên máy
 

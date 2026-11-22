@@ -11,7 +11,11 @@ const HAND_MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmar
 const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task";
 const params = new URLSearchParams(location.search);
 const ENDPOINT = params.get("endpoint") || CONFIG.endpoint;   // ?endpoint= để thử với server khác
-const DEMO_SRC = params.get("src");                             // ?src=video.mp4 thay webcam bằng video (để thử)
+const DEMO_SRC = params.get("src");                             // ?src=video.mp4 thay camera bằng video (để thử)
+const DETECT_INTERVAL_MS = 66;                                  // ~15 lần nhận diện/giây khi không chụp
+const IS_TOUCH = matchMedia("(hover: none) and (pointer: coarse)").matches;
+// Trình duyệt nhúng trong app (Zalo, Messenger, Facebook, Instagram, TikTok, Line…) thường không cho dùng camera.
+const IN_APP = /Zalo|FBAN|FBAV|FB_IAB|Messenger|Instagram|Line\/|TikTok|musical_ly|; wv\)/i.test(navigator.userAgent);
 
 const $ = (id) => document.getElementById(id);
 const S = {
@@ -20,7 +24,7 @@ const S = {
   idx: 0, state: "idle", running: false, tState: 0,
   frames: [], flags: [], tFirst: 0, tNext: 0,
   saved: [],             // tên các lượt lưu trong phiên này (để xóa lượt cuối)
-  hand: null, pose: null, lastTs: 0, handOn: false, poseOn: false,
+  hand: null, pose: null, lastTs: 0, lastDetect: -1e9, hr: null, pr: null, handOn: false, poseOn: false, wakeLock: null,
   stream: null, message: "", tMessage: 0,
 };
 
@@ -50,27 +54,36 @@ async function api(body) {
 
 // ---------------------------------------------------------------- lỗi camera → hướng dẫn tiếng Việt
 
+const IN_APP_HELP = "Trang đang mở trong trình duyệt của ứng dụng (Zalo, Messenger, Facebook…), loại này thường không cho dùng camera. "
+  + "Bấm nút ⋯ (hoặc ⋮) ở góc màn hình → \"Mở bằng trình duyệt\" / \"Open in browser\", hoặc chép link dán vào Chrome (Android) / Safari (iPhone).";
+
 function cameraError(e) {
-  const reload = "Sửa xong thì tải lại trang (F5) và bấm bắt đầu lần nữa.";
+  if (IN_APP) return IN_APP_HELP;
+  const reload = "Sửa xong thì tải lại trang và bấm bắt đầu lần nữa.";
   switch (e.name) {
     case "NotFoundError":
     case "OverconstrainedError":
     case "DevicesNotFoundError":
       return "Không tìm thấy camera nào trên máy này. Kiểm tra:\n"
-        + "• Máy có webcam: laptop có thể có nắp trượt hoặc phím Fn tắt camera; webcam rời phải được cắm.\n"
+        + "• Laptop: camera không bị che bởi nắp trượt hay tắt bằng phím Fn / phím camera.\n"
         + "• Windows: Settings → Privacy & security → Camera → bật \"Camera access\" và \"Let desktop apps access your camera\".\n"
-        + "• macOS: System Settings → Privacy & Security → Camera → bật cho trình duyệt đang dùng.\n" + reload;
+        + "• macOS: System Settings → Privacy & Security → Camera → bật cho trình duyệt đang dùng.\n"
+        + "• Điện thoại: mở link bằng Chrome (Android) hoặc Safari (iPhone), không mở trong Zalo/Messenger.\n" + reload;
     case "NotAllowedError":
     case "PermissionDeniedError":
-      return "Trình duyệt hoặc hệ điều hành đang chặn camera. Bấm biểu tượng ổ khóa / camera bên trái thanh địa chỉ → "
-        + "Camera: Cho phép (Allow). Trên macOS còn cần bật trình duyệt trong System Settings → Privacy & Security → Camera.\n" + reload;
+      return "Trình duyệt hoặc hệ điều hành đang chặn camera.\n"
+        + "• Máy tính: bấm biểu tượng ổ khóa / camera bên trái thanh địa chỉ → Camera: Cho phép (Allow). "
+        + "macOS còn cần bật trình duyệt trong System Settings → Privacy & Security → Camera.\n"
+        + "• Android: bấm biểu tượng bên trái thanh địa chỉ → Quyền → Camera: Cho phép; nếu vẫn lỗi: Cài đặt → Ứng dụng → Chrome → Quyền → Camera.\n"
+        + "• iPhone: Cài đặt → Safari → Camera → Cho phép (hoặc Hỏi), rồi mở lại trang.\n" + reload;
     case "NotReadableError":
     case "TrackStartError":
     case "AbortError":
       return "Camera đang bị ứng dụng khác dùng (Zoom, Google Meet, Teams, OBS, tab khác…). Đóng ứng dụng đó rồi thử lại.\n" + reload;
     case "SecurityError":
     case "TypeError":
-      return "Trình duyệt không cho dùng camera ở trang này. Hãy mở đúng link https bằng Chrome, Edge hoặc Safari (không mở trong Zalo/Messenger).";
+      return "Trình duyệt không cho dùng camera ở trang này. Hãy mở đúng link https bằng Chrome, Edge hoặc Safari (không mở trong Zalo/Messenger).\n"
+        + "iPhone cần iOS 14.3 trở lên.";
     default:
       return `Không mở được camera (${e.name}: ${e.message}).\n${reload}`;
   }
@@ -79,9 +92,11 @@ function cameraError(e) {
 // Thử lần lượt từ yêu cầu chi tiết đến đơn giản nhất: một số camera / driver từ chối độ phân giải hoặc deviceId đã lưu.
 async function getStream(deviceId) {
   if (!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error("no mediaDevices"), { name: "SecurityError" });
+  // Không chọn camera cụ thể thì ưu tiên camera trước (facingMode "user"): điện thoại Android hay mặc định camera sau.
+  const which = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: "user" } };
   const attempts = [
-    { deviceId: deviceId ? { exact: deviceId } : undefined, width: { ideal: 1280 }, height: { ideal: 720 } },
-    deviceId ? { deviceId: { exact: deviceId } } : true,
+    { ...which, width: { ideal: 1280 }, height: { ideal: 720 } },
+    which,
     true,
   ];
   let last;
@@ -239,18 +254,25 @@ function loop() {
     wctx.drawImage(video, (video.videoWidth - s) / 2, (video.videoHeight - s) / 2, s, s, 0, 0, CONFIG.size, CONFIG.size);
 
     const now = performance.now();
-    const ts = Math.max(Math.round(now), S.lastTs + 1);
-    S.lastTs = ts;
-    const hr = S.hand.detectForVideo(work, ts);
-    const pr = S.pose.detectForVideo(work, ts);
-    S.handOn = hr.landmarks.length > 0;
-    S.poseOn = pr.landmarks.length > 0;
+    // Nhận diện tối đa ~15 lần/giây, và luôn chạy đúng khung sắp chụp: chạy mọi khung (60 lần/giây) làm điện thoại
+    // và laptop yếu quá tải, tụt nhịp chụp dưới minFps.
+    const captureDue = S.state === "recording" && now >= S.tNext;
+    if (captureDue || now - S.lastDetect >= DETECT_INTERVAL_MS) {
+      const ts = Math.max(Math.round(now), S.lastTs + 1);
+      S.lastTs = ts;
+      S.lastDetect = now;
+      S.hr = S.hand.detectForVideo(work, ts);
+      S.pr = S.pose.detectForVideo(work, ts);
+      S.handOn = S.hr.landmarks.length > 0;
+      S.poseOn = S.pr.landmarks.length > 0;
+    }
 
     tick(now, work);
 
     const vctx = view.getContext("2d");
     vctx.drawImage(work, 0, 0);
     const du = new DrawingUtils(vctx);
+    const hr = S.hr || { landmarks: [] }, pr = S.pr || { landmarks: [] };
     for (const lm of pr.landmarks) du.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS, { color: "#50b450", lineWidth: 2 });
     for (const lm of hr.landmarks) {
       du.drawConnectors(lm, HandLandmarker.HAND_CONNECTIONS, { color: "#ff8c3c", lineWidth: 2 });
@@ -417,13 +439,29 @@ async function start() {
   renderList();
   Queue.pump();
   if (!S.looping) { S.looping = true; requestAnimationFrame(loop); }
+  keepAwake();
 }
+
+// Giữ màn hình sáng trong lúc quay (điện thoại / laptop tự tắt màn hình sẽ dừng camera). Trình duyệt bỏ khóa khi đổi tab,
+// nên xin lại khi quay về.
+async function keepAwake() {
+  try { if ("wakeLock" in navigator && !document.hidden) S.wakeLock = await navigator.wakeLock.request("screen"); } catch { /* không hỗ trợ */ }
+}
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && !$("studio").hidden) keepAwake();
+  if (document.hidden && S.state !== "idle") {   // ẩn tab giữa chừng làm nhịp chụp sai → bỏ lượt đang quay
+    Object.assign(S, { running: false, state: "idle", frames: [] });
+    say("Đã tạm dừng vì rời khỏi trang. Lượt đang quay dở đã bỏ.");
+  }
+});
 
 async function main() {
   try { S.labels = (await (await fetch("labels.json")).json()).sort((a, b) => a.id - b.id); }
   catch (e) { $("setup-error").textContent = `Không tải được labels.json: ${e.message}`; $("setup-error").hidden = false; return; }
   await Queue.open();
   restoreSetup();
+  if (IN_APP) { $("inapp").textContent = IN_APP_HELP; $("inapp").hidden = false; }
+  if (IS_TOUCH) document.body.classList.add("touch");
   $("signer").addEventListener("input", () => { $("signer-slug").textContent = asciiSlug($("signer").value) || "–"; });
   $("start").onclick = start;
   $("toggle").onclick = toggle;
