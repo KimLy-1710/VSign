@@ -27,6 +27,7 @@ const S = {
   hand: null, pose: null, lastTs: 0, lastDetect: -1e9, hr: null, pr: null, handOn: false, poseOn: false, wakeLock: null,
   stream: null, message: "", tMessage: 0,
   refs: null, refSlug: null, showRef: true,   // video mẫu (references.json)
+  shoulder: null, frame: { ok: false, text: "Chưa thấy người" },   // kiểm tra khoảng cách (độ rộng vai, làm mượt)
 };
 
 // ---------------------------------------------------------------- tiện ích
@@ -266,6 +267,7 @@ function loop() {
       S.pr = S.pose.detectForVideo(work, ts);
       S.handOn = S.hr.landmarks.length > 0;
       S.poseOn = S.pr.landmarks.length > 0;
+      updateFraming(S.pr);
     }
 
     tick(now, work);
@@ -286,12 +288,17 @@ function loop() {
 
 function tick(now, work) {
   if (S.state === "countdown" && now - S.tState >= CONFIG.countdown * 1000) {
+    if (!S.frame.ok) {   // người quay di chuyển trong lúc đếm ngược → dừng, không quay lượt hỏng
+      Object.assign(S, { running: false, state: "idle" });
+      say(`Đã dừng: ${S.frame.text}. Chỉnh lại rồi bấm Bắt đầu quay.`, "bad");
+      return;
+    }
     Object.assign(S, { state: "recording", frames: [], flags: [], tFirst: now, tNext: now });
   }
   if (S.state !== "recording" || now < S.tNext) return;
   S.tNext += 1000 / CONFIG.fps;
   S.frames.push(work.toDataURL("image/jpeg", CONFIG.jpegQuality).split(",")[1]);   // ảnh gốc, CHƯA lật gương
-  S.flags.push([S.handOn, S.poseOn]);
+  S.flags.push([S.handOn, S.poseOn, S.lastShoulder]);
   if (S.frames.length < CONFIG.frames) return;
   finishTake(now);
 }
@@ -301,22 +308,26 @@ async function finishTake(now) {
   const handRatio = S.flags.filter((f) => f[0]).length / S.flags.length;
   const poseRatio = S.flags.filter((f) => f[1]).length / S.flags.length;
   const fps = (CONFIG.frames - 1) / Math.max((now - S.tFirst) / 1000, 1e-6);
+  const widths = S.flags.map((f) => f[2]).filter((w) => w != null).sort((a, b) => a - b);
+  const shoulder = widths.length ? widths[Math.floor(widths.length / 2)] : null;   // trung vị cả lượt
   const frames = S.frames;
   S.frames = [];
   S.state = "idle";
   if (fps < CONFIG.minFps) say(`Loại: máy chỉ chụp được ${fps.toFixed(1)} khung/giây (cần ${CONFIG.fps}). Đóng bớt tab/ứng dụng rồi quay lại`, "bad");
   else if (handRatio < CONFIG.minHandRatio) say(`Loại: chỉ thấy tay ở ${Math.round(handRatio * 100)}% số khung, quay lại`, "bad");
   else if (poseRatio < CONFIG.minPoseRatio) say(`Loại: chỉ thấy người ở ${Math.round(poseRatio * 100)}% số khung, quay lại`, "bad");
+  else if (shoulder != null && shoulder > CONFIG.maxShoulder) say("Loại: quá gần camera trong lúc quay. Lùi ra xa (thấy đến thắt lưng) rồi quay lại", "bad");
+  else if (shoulder != null && shoulder < CONFIG.minShoulder) say("Loại: quá xa camera trong lúc quay. Lại gần hơn rồi quay lại", "bad");
   else {
     const name = `${S.signer}_s${S.session}_${pad(l.id)}_${l.slug}_${stamp()}`;
     const meta = { name, label_id: l.id, slug: l.slug, text: l.text, signer: S.signer, session: S.session,
       recorded_at: new Date().toISOString(), frames: CONFIG.frames, size: CONFIG.size, fps: +fps.toFixed(1),
-      browser_hand_ratio: +handRatio.toFixed(2), browser_pose_ratio: +poseRatio.toFixed(2),
+      browser_hand_ratio: +handRatio.toFixed(2), browser_pose_ratio: +poseRatio.toFixed(2), browser_shoulder_width: shoulder == null ? null : +shoulder.toFixed(3),
       ...cameraInfo(), user_agent: navigator.userAgent, app_version: APP_VERSION };
     await Queue.add({ name, meta, frames });
     S.saved.push(name);
     S.counts[l.id] = mine(l) + 1;
-    say(`Đã lưu lượt ${mine(l)}/${S.quota}`, "ok");
+    say(`Đã lưu lượt ${mine(l)}/${S.quota} ✓ Đưa tay về bụng`, "ok");
     Queue.pump();
   }
   if (S.running && mine(l) < S.quota) Object.assign(S, { state: "countdown", tState: performance.now() });
@@ -327,6 +338,36 @@ async function finishTake(now) {
     else { S.idx = nxt; say(`Đủ lượt. Ký hiệu tiếp theo: ${label().text}. Bấm Space để quay.`, "ok"); }
   }
   renderList();
+}
+
+// Khoảng cách: độ rộng vai so với cạnh khung vuông, cùng hình học với tập ViSL (trung vị 0,33; 5–95%: 0,29–0,42).
+// Quá gần thì mất tay và thân, quá xa thì bàn tay quá nhỏ. Độ rộng được làm mượt, và trạng thái xấu phải kéo dài
+// FRAME_BAD_MS mới tính (nhận diện chập chờn một hai khung, ví dụ tay che vai, không làm dừng quay).
+const FRAME_BAD_MS = 700;
+const FRAME_OK = { ok: true, short: "Khoảng cách: tốt", big: "", hint: "", text: "" };
+
+function measureFraming(pr) {
+  const lm = pr?.landmarks?.[0];
+  const l = lm?.[11], r = lm?.[12];
+  if (!lm) return [null, { ok: false, short: "Chưa thấy người", big: "Chưa thấy người", hint: "Vào giữa khung, đủ sáng", text: "chưa thấy người trong khung" }];
+  if ((l.visibility ?? 1) < 0.5 || (r.visibility ?? 1) < 0.5)   // thấy người nhưng vai bị cắt khỏi khung: gần như luôn là quá gần
+    return [null, { ok: false, short: "Quá gần", big: "↙ Lùi ra xa", hint: "Chưa thấy rõ hai vai: cần thấy từ đầu đến thắt lưng", text: "chưa thấy rõ hai vai, lùi ra xa" }];
+  const w = Math.hypot(l.x - r.x, l.y - r.y), cx = (l.x + r.x) / 2;
+  S.shoulder = S.shoulder == null ? w : 0.7 * S.shoulder + 0.3 * w;
+  const sw = S.shoulder;
+  if (sw > CONFIG.maxShoulder) return [w, { ok: false, short: "Quá gần", big: "↙ Lùi ra xa", hint: "Cần thấy từ đầu đến thắt lưng và cả hai tay", text: "quá gần camera, lùi ra xa" }];
+  if (sw < CONFIG.minShoulder) return [w, { ok: false, short: "Quá xa", big: "Lại gần hơn ↗", hint: "Người đang quá nhỏ trong khung", text: "quá xa camera, lại gần hơn" }];
+  if (cx < 0.3 || cx > 0.7) return [w, { ok: false, short: "Lệch khung", big: "Vào giữa khung", hint: "Dịch người hoặc máy cho cân", text: "đang lệch khỏi giữa khung" }];
+  return [w, FRAME_OK];
+}
+
+function updateFraming(pr) {
+  const [w, status] = measureFraming(pr);
+  S.lastShoulder = w;
+  const now = performance.now();
+  if (status.ok) { S.badSince = null; S.everOk = true; S.frame = status; return; }
+  S.badSince ??= now;
+  if (now - S.badSince >= FRAME_BAD_MS || !S.everOk) S.frame = status;   // lần đầu chưa từng tốt thì báo ngay
 }
 
 // Video mẫu ViSL của ký hiệu hiện tại (lật như gương trong CSS) và link tham khảo QIPEDC.
@@ -359,8 +400,17 @@ function render(now) {
   $("ref-toggle").hidden = !hasRef || S.state === "recording";
   vp.classList.toggle("recording", S.state === "recording");
   vp.classList.toggle("countdown", S.state === "countdown");
-  $("big").textContent = S.state === "countdown" ? Math.ceil(CONFIG.countdown - (now - S.tState) / 1000)
-    : S.state === "recording" ? `● ${S.frames.length}/${CONFIG.frames}` : "";
+  const [main, sub] = S.state === "countdown" ? [Math.ceil(CONFIG.countdown - (now - S.tState) / 1000), "Hai tay đặt ở bụng"]
+    : S.state === "recording" ? ["● Làm ký hiệu", "xong thì đưa tay về bụng"]
+    : !S.frame.ok ? [S.frame.big, S.frame.hint] : ["", ""];
+  $("big-main").textContent = main;
+  $("big-sub").textContent = sub;
+  $("rec-bar").hidden = S.state !== "recording";
+  $("rec-fill").style.width = `${(S.frames.length / CONFIG.frames) * 100}%`;
+  const ff = $("frame-flag");
+  ff.textContent = S.frame.ok ? "Khoảng cách: tốt" : S.frame.short;
+  ff.classList.toggle("on", S.frame.ok);
+  $("toggle").classList.toggle("primary", S.state !== "idle" || S.frame.ok);
   $("hand-flag").classList.toggle("on", S.handOn);
   $("pose-flag").classList.toggle("on", S.poseOn);
   $("message").textContent = now - S.tMessage < 4000 ? S.message : "";
@@ -373,6 +423,7 @@ function render(now) {
 function toggle() {
   if (S.state === "idle") {
     if (mine() >= S.quota) return say("Ký hiệu này đã đủ lượt. Chọn ký hiệu khác ở danh sách bên phải.");
+    if (!S.frame.ok) return say(`Chưa quay được: ${S.frame.text}.`, "bad");
     Object.assign(S, { running: true, state: "countdown", tState: performance.now() });
   } else {
     Object.assign(S, { running: false, state: "idle", frames: [] });
@@ -491,6 +542,7 @@ async function main() {
     try { localStorage.setItem("vsign-hide-ref", S.showRef ? "0" : "1"); } catch {}
   };
   $("ref-toggle").textContent = S.showRef ? "Ẩn mẫu" : "Xem mẫu";
+  $("ref-box").onclick = () => $("ref-box").classList.toggle("big");
   restoreSetup();
   if (IN_APP) { $("inapp").textContent = IN_APP_HELP; $("inapp").hidden = false; }
   if (IS_TOUCH) document.body.classList.add("touch");

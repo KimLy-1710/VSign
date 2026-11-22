@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "rm -rf dist && mkdir dist && cp webapp/index.html webapp/app.js webapp/config.js webapp/style.css webapp/references.json labels.json dist/ && cp -R webapp/ref dist/ref",
+  "buildCommand": "rm -rf dist && mkdir dist && cp webapp/index.html webapp/app.js webapp/config.js webapp/style.css webapp/references.json labels.json dist/ && cp -R webapp/ref dist/ref && cp -R webapp/guide dist/guide",
   "outputDirectory": "dist",
   "headers": [
     {

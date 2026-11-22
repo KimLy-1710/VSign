@@ -40,7 +40,7 @@ import keypoints as kp
 
 ROOT = Path(__file__).resolve().parent
 NAME_RE = re.compile(r"^([a-z0-9]+)_s([12])_(\d{2})_([a-z0-9_]+)_(\d{8}-\d{6}-\d{3})$")
-LOG_FIELDS = ["zip", "status", "reason", "file", "hand_ratio", "pose_ratio", "imported_at"]
+LOG_FIELDS = ["zip", "status", "reason", "file", "hand_ratio", "pose_ratio", "shoulder_width", "imported_at"]
 REJECTED_DIR = "_rejected"
 FRAME_MS = round(1000 / kp.CAPTURE_FPS)   # timestamp cho chế độ VIDEO, giống nhịp chụp của web app
 
@@ -81,6 +81,16 @@ def extract(frames: list[np.ndarray], model: Path):
     return np.stack(seq).astype(np.float32), *ratios
 
 
+def shoulder_width(seq: np.ndarray) -> float | None:
+    """Trung vị độ rộng vai (theo cạnh khung vuông) trên các khung thấy rõ hai vai. ViSL: trung vị 0,33, 5–95% là 0,29–0,42."""
+    pose = seq[:, :kp.N_POSE * 4].reshape(len(seq), kp.N_POSE, 4)
+    l, r = pose[:, 11], pose[:, 12]
+    ok = (l[:, 3] > 0.5) & (r[:, 3] > 0.5)
+    if not ok.any():
+        return None
+    return float(np.median(np.linalg.norm(l[ok, :2] - r[ok, :2], axis=1)))
+
+
 def process(zip_path: Path, labels: dict[int, dict], data_dir: Path, args) -> dict:
     stem = zip_path.stem
     row = {"zip": zip_path.name, "imported_at": datetime.now().isoformat(timespec="seconds")}
@@ -104,6 +114,12 @@ def process(zip_path: Path, labels: dict[int, dict], data_dir: Path, args) -> di
         return {**row, "status": "rejected", "reason": "hands_missing"}
     if pose < args.min_pose_ratio:
         return {**row, "status": "rejected", "reason": "pose_missing"}
+    sw = shoulder_width(seq)
+    row["shoulder_width"] = "" if sw is None else f"{sw:.2f}"
+    if sw is not None and sw > args.max_shoulder:
+        return {**row, "status": "rejected", "reason": "too_close"}
+    if sw is not None and sw < args.min_shoulder:
+        return {**row, "status": "rejected", "reason": "too_far"}
 
     out = cd.label_dir(data_dir, label) / f"{stem}.npy"
     rel = out.relative_to(data_dir).as_posix()
@@ -128,6 +144,8 @@ def main(argv=None) -> int:
     p.add_argument("--model", default=str(kp.DEFAULT_MODEL_PATH))
     p.add_argument("--min-hand-ratio", type=float, default=0.5, help="cùng ngưỡng với collect_data.py")
     p.add_argument("--min-pose-ratio", type=float, default=0.8)
+    p.add_argument("--min-shoulder", type=float, default=0.22, help="độ rộng vai / cạnh khung tối thiểu (quá xa), như webapp/config.js")
+    p.add_argument("--max-shoulder", type=float, default=0.48, help="độ rộng vai / cạnh khung tối đa (quá gần), như webapp/config.js")
     p.add_argument("--retry-rejected", action="store_true", help="xử lý lại cả các lượt đã bị loại trước đó")
     p.add_argument("--keep-rejected", action="store_true", help="không chuyển lượt bị loại vào thư mục _rejected")
     p.add_argument("--dry-run", action="store_true", help="chỉ kiểm tra, không ghi .npy / manifest / log")
@@ -150,7 +168,7 @@ def main(argv=None) -> int:
     for i, z in enumerate(zips, 1):
         row = process(z, labels, data_dir, args)
         counts[row["status"]] += 1
-        note = f"tay {row.get('hand_ratio', '-')}, người {row.get('pose_ratio', '-')}"
+        note = f"tay {row.get('hand_ratio', '-')}, người {row.get('pose_ratio', '-')}, vai {row.get('shoulder_width', '-')}"
         print(f"  [{i}/{len(zips)}] {z.name}: {'đạt' if row['status'] == 'ok' else 'LOẠI ' + row['reason']} ({note})")
         if not args.dry_run:
             data_dir.mkdir(parents=True, exist_ok=True)

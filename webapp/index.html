@@ -12,28 +12,52 @@
     <div id="who"></div>
   </header>
 
-  <!-- Bước 1: thông tin người quay -->
-  <section id="setup" class="card">
-    <h2>Thông tin buổi quay</h2>
+  <!-- Bước 1: hướng dẫn + thông tin người quay -->
+  <section id="setup">
     <p id="inapp" class="warn" hidden></p>
-    <label>Tên người quay
-      <input id="signer" autocomplete="off" placeholder="Ví dụ: Bảo Trân">
-      <small>Dùng đúng một tên cho cả hai buổi. Tên được đổi thành mã không dấu: <b id="signer-slug">–</b></small>
-    </label>
-    <fieldset>
-      <legend>Buổi quay</legend>
-      <label class="radio"><input type="radio" name="session" value="1" checked> Buổi 1 · 3 lượt mỗi ký hiệu (train / validation)</label>
-      <label class="radio"><input type="radio" name="session" value="2"> Buổi 2 · 2 lượt mỗi ký hiệu (test, quay ngày khác, đổi trang phục, nền, ánh sáng)</label>
-    </fieldset>
-    <ul class="tips">
-      <li>Dùng camera có sẵn của máy: camera laptop, hoặc <b>camera trước</b> của điện thoại.</li>
-      <li>Điện thoại: mở link bằng <b>Chrome</b> (Android) hoặc <b>Safari</b> (iPhone), không mở trong Zalo/Messenger. Dựng máy cố định (giá đỡ hoặc tựa vào vật), không cầm tay.</li>
-      <li>Ngồi hoặc đứng cách máy khoảng 1–1,5 m để thấy rõ <b>mặt, hai vai và hai tay</b> trong khung vuông.</li>
-      <li>Đủ sáng, chỉ một người trong khung hình, không quay cận bàn tay.</li>
-      <li>Mỗi lượt: đếm ngược 2 giây, rồi quay khoảng 2,5 giây. Làm ký hiệu trọn vẹn trong thời gian đó.</li>
-    </ul>
-    <button id="start" class="primary">Mở camera và bắt đầu</button>
-    <p id="setup-error" class="error" hidden></p>
+
+    <div class="card guide">
+      <h2>Trước khi quay: 3 quy tắc</h2>
+      <div class="rules">
+        <figure class="rule good">
+          <img src="guide/rest.jpg" alt="Người đứng đúng khoảng cách, thấy từ đầu đến thắt lưng, hai tay đặt ở bụng" width="240" height="240">
+          <figcaption><b>1. Đủ xa: thấy từ đầu đến thắt lưng</b>Cả hai tay luôn nằm trong khung. Laptop: đẩy máy ra xa hoặc lùi ghế, khoảng 1 m. Điện thoại: dựng cố định, đứng hoặc ngồi cách 1–1,5 m.</figcaption>
+        </figure>
+        <figure class="rule bad">
+          <img src="guide/too_close.jpg" alt="Quay quá gần, chỉ thấy đầu và vai" width="240" height="240">
+          <figcaption><b>✗ Quá gần</b>Chỉ thấy đầu và vai, mất tay và thân. App sẽ báo “Lùi ra xa” và không cho quay.</figcaption>
+        </figure>
+        <figure class="rule good">
+          <img src="guide/sign.jpg" alt="Đang làm ký hiệu Chào giống video mẫu" width="240" height="240">
+          <figcaption><b>2. Làm đủ động tác như video mẫu</b>Video mẫu hiện ở góc khung hình, đã lật như gương: làm giống hệt hình, cùng phía tay.</figcaption>
+        </figure>
+      </div>
+      <p class="rule-3"><b>3. Bắt đầu và kết thúc ở tư thế nghỉ:</b> hai tay đặt nhẹ ở bụng như ảnh đầu tiên. Đếm ngược thì để tay ở bụng, khung chuyển đỏ mới làm ký hiệu, làm xong đưa tay về bụng.</p>
+
+      <h3>Mỗi lượt diễn ra thế nào</h3>
+      <ol class="timeline">
+        <li><span class="dot amber"></span><b>Đếm ngược 2 giây</b><small>Hai tay ở bụng, nhìn camera</small></li>
+        <li><span class="dot red"></span><b>Khung đỏ ~2,5 giây</b><small>Làm ký hiệu, xong về tư thế nghỉ</small></li>
+        <li><span class="dot green"></span><b>Tự lưu</b><small>Tự quay lượt tiếp đến khi đủ, rồi sang ký hiệu sau</small></li>
+      </ol>
+
+      <p class="device">📷 Camera laptop hoặc camera trước điện thoại · mở bằng Chrome / Safari (không mở trong Zalo, Messenger) · đủ sáng, nền gọn, chỉ một người trong khung.</p>
+    </div>
+
+    <div class="card form">
+      <h2>Thông tin buổi quay</h2>
+      <label>Tên người quay
+        <input id="signer" autocomplete="off" placeholder="Ví dụ: Bảo Trân">
+        <small>Dùng đúng một tên cho cả hai buổi. Mã lưu trên Drive: <b id="signer-slug">–</b></small>
+      </label>
+      <fieldset>
+        <legend>Buổi quay</legend>
+        <label class="radio"><input type="radio" name="session" value="1" checked> <span><b>Buổi 1</b> · 3 lượt mỗi ký hiệu</span></label>
+        <label class="radio"><input type="radio" name="session" value="2"> <span><b>Buổi 2</b> · 2 lượt mỗi ký hiệu · quay <b>ngày khác</b>, đổi trang phục, nền và ánh sáng</span></label>
+      </fieldset>
+      <button id="start" class="primary">Mở camera và bắt đầu</button>
+      <p id="setup-error" class="error" hidden></p>
+    </div>
   </section>
 
   <!-- Bước 2: quay -->
@@ -45,15 +69,17 @@
           <div id="sign-name" class="sign-name">–</div>
           <div id="sign-count" class="sign-count"></div>
         </div>
-        <div id="big" class="overlay center"></div>
+        <div id="big" class="overlay center"><div id="big-main"></div><div id="big-sub"></div></div>
+        <div id="rec-bar" class="rec-bar" hidden><i id="rec-fill"></i></div>
         <div class="overlay bottom">
           <span id="hand-flag" class="flag">Tay</span>
           <span id="pose-flag" class="flag">Người</span>
+          <span id="frame-flag" class="flag">Khoảng cách</span>
           <span id="message"></span>
         </div>
         <figure id="ref-box" class="ref-box" hidden>
           <video id="ref" muted loop playsinline autoplay></video>
-          <figcaption>Mẫu · làm giống hình</figcaption>
+          <figcaption>Mẫu · bấm để phóng to</figcaption>
         </figure>
         <button id="ref-toggle" class="ref-toggle" hidden>Ẩn mẫu</button>
       </div>
@@ -64,6 +90,11 @@
         <button id="undo" title="Xóa lượt vừa lưu (D)">Xóa lượt cuối</button>
         <select id="camera" title="Chọn camera"></select>
       </div>
+      <ol class="steps">
+        <li>Xem video mẫu</li>
+        <li>Hai tay ở bụng, bấm <b>Bắt đầu quay</b></li>
+        <li>Khung đỏ: làm đủ động tác, xong về tư thế nghỉ</li>
+      </ol>
       <div id="ref-links" class="ref-links"></div>
       <div id="upload" class="upload"></div>
     </section>

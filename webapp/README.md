@@ -59,17 +59,21 @@ Không cài Drive cho máy tính thì tải thư mục về dạng zip, giải n
 
 ## Hướng dẫn cho thành viên
 
-Quay bằng camera có sẵn của máy: camera laptop, hoặc camera trước của điện thoại.
+App tự hướng dẫn ngay trên màn hình (3 quy tắc có ảnh, video mẫu, kiểm tra khoảng cách). Tóm tắt để gửi kèm link:
 
-1. Mở link bằng **Chrome / Edge / Safari** trên laptop, hoặc **Chrome (Android) / Safari (iPhone)** trên điện thoại.
-   - Nếu nhận link qua Zalo/Messenger: bấm ⋯ → **Mở bằng trình duyệt**. Trình duyệt bên trong Zalo/Messenger thường không cho dùng camera.
-2. Nhập tên (dùng đúng một tên cho cả hai buổi), chọn buổi quay, rồi cho phép dùng camera.
-3. Điện thoại: dựng máy cố định (giá đỡ hoặc tựa vào vật), dùng camera trước, không cầm tay. Đặt máy cách 1–1,5 m để thấy rõ mặt, hai vai và hai tay trong khung vuông. Đủ sáng, chỉ một người trong khung.
-4. Xem video mẫu ở góc khung hình (đã lật như gương: làm giống hệt hình, cùng phía tay). Bấm **Bắt đầu quay** (laptop: phím **Space**). App tự đếm ngược, quay đủ số lượt rồi chuyển sang ký hiệu tiếp theo. Làm sai thì bấm **Xóa lượt cuối** (phím **D**). Bấm ◀ / ▶ hoặc chọn trong danh sách để đổi ký hiệu.
-5. Không chuyển sang app hay tab khác trong lúc quay: lượt đang quay sẽ bị bỏ. Chờ dòng "Mọi lượt đã lưu lên Drive ✓" rồi mới đóng trang.
-6. Buổi 2 quay vào ngày khác, đổi trang phục, nền và ánh sáng.
+**3 quy tắc**
+1. **Đủ xa:** thấy từ đầu đến thắt lưng, cả hai tay luôn trong khung. Laptop: đẩy máy ra xa hoặc lùi ghế, khoảng 1 m. Điện thoại: dựng cố định, camera trước, cách 1–1,5 m. App báo **"Khoảng cách: tốt"** mới cho quay; quá gần sẽ báo **"Lùi ra xa"**.
+2. **Làm đủ động tác như video mẫu** ở góc khung hình. Video đã lật như gương: làm giống hệt hình, cùng phía tay. Bấm vào video để phóng to.
+3. **Bắt đầu và kết thúc ở tư thế nghỉ:** hai tay đặt nhẹ ở bụng. Đếm ngược thì để tay ở bụng, khung chuyển đỏ mới làm ký hiệu, làm xong đưa tay về bụng.
 
-Nếu báo lỗi camera, app sẽ hiện hướng dẫn cụ thể (cấp quyền, đóng ứng dụng đang dùng camera, mở bằng trình duyệt khác). Máy quá chậm (dưới 9 khung/giây) thì lượt bị loại; đóng bớt ứng dụng hoặc dùng máy khác.
+**Cách quay**
+- Mở link bằng **Chrome / Edge / Safari** (laptop) hoặc **Chrome (Android) / Safari (iPhone)**. Nhận link qua Zalo/Messenger thì bấm ⋯ → **Mở bằng trình duyệt**.
+- Nhập tên (đúng một tên cho cả hai buổi), chọn buổi, cho phép camera.
+- Bấm **Bắt đầu quay** (laptop: phím **Space**). Mỗi lượt: đếm ngược 2 giây → khung đỏ khoảng 2,5 giây → tự lưu → tự quay lượt tiếp đến khi đủ, rồi sang ký hiệu sau. Làm sai thì bấm **Xóa lượt cuối** (phím **D**).
+- Không chuyển app hay tab trong lúc quay (lượt đang quay sẽ bị bỏ). Chờ dòng "Mọi lượt đã lưu lên Drive ✓" rồi mới đóng trang.
+- **Buổi 2** quay vào ngày khác, đổi trang phục, nền và ánh sáng.
+
+Lượt bị loại (không thấy tay, quá gần/quá xa, máy chụp chậm dưới 9 khung/giây) thì app báo lý do ngay; chỉnh lại rồi quay tiếp. Script import trên máy huấn luyện áp dụng cùng ngưỡng khoảng cách (độ rộng vai 0,22–0,48 cạnh khung; ViSL: 0,29–0,42).
 
 ## Thử trên máy
 

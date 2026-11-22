@@ -8,6 +8,8 @@ export const CONFIG = {
   countdown: 2,            // giây chuẩn bị trước mỗi lượt
   minHandRatio: 0.5,       // cùng ngưỡng với collect_data.py
   minPoseRatio: 0.8,
+  minShoulder: 0.22,       // độ rộng vai / cạnh khung vuông; ViSL: trung vị 0,33, 5–95% là 0,29–0,42
+  maxShoulder: 0.48,       // lớn hơn = quá gần (mất tay và thân), như lượt thử đầu tiên (0,62–0,66)
   quota: { 1: 3, 2: 2 },   // SESSION_QUOTA: số lượt mỗi người cho mỗi ký hiệu
   size: 480,               // cạnh ảnh vuông lưu lại (px)
   jpegQuality: 0.9,
