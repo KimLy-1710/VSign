@@ -19,7 +19,7 @@ const IN_APP = /Zalo|FBAN|FBAV|FB_IAB|Messenger|Instagram|Line\/|TikTok|musical_
 
 const $ = (id) => document.getElementById(id);
 const S = {
-  labels: [], signer: "", session: 1, token: "", quota: 3,
+  labels: [], signer: "", session: 1, quota: 3,
   counts: {},            // label id → số lượt đã lưu (đã tải lên + đang chờ)
   idx: 0, state: "idle", running: false, tState: 0,
   frames: [], flags: [], tFirst: 0, tNext: 0,
@@ -44,11 +44,11 @@ const label = () => S.labels[S.idx];
 async function api(body) {
   if (!ENDPOINT) throw new Error("Chưa cấu hình endpoint trong config.js");
   const r = await fetch(ENDPOINT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ token: S.token, ...body }) });
+    body: JSON.stringify(body) });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   const data = await r.json();
-  // Sai mã nhóm hoặc Apps Script thiếu cấu hình: thử lại cũng vô ích → dừng hẳn (khác với lỗi mạng tạm thời).
-  if (!data.ok) throw Object.assign(new Error(data.error || "Lỗi máy chủ"), { fatal: /Sai mã nhóm|chưa có thuộc tính/.test(data.error || "") });
+  // Apps Script thiếu cấu hình: thử lại cũng vô ích → dừng hẳn (khác với lỗi mạng tạm thời).
+  if (!data.ok) throw Object.assign(new Error(data.error || "Lỗi máy chủ"), { fatal: /chưa có thuộc tính/.test(data.error || "") });
   return data;
 }
 
@@ -394,7 +394,6 @@ function restoreSetup() {
   try {
     const saved = JSON.parse(localStorage.getItem("vsign-setup") || "{}");
     if (saved.signerName) $("signer").value = saved.signerName;
-    if (saved.token) $("token").value = saved.token;
     if (saved.session) document.querySelector(`input[name=session][value="${saved.session}"]`).checked = true;
   } catch { /* localStorage có thể bị chặn */ }
   $("signer-slug").textContent = asciiSlug($("signer").value) || "–";
@@ -405,17 +404,15 @@ async function start() {
   err.hidden = true;
   S.signer = asciiSlug($("signer").value);
   S.session = +document.querySelector("input[name=session]:checked").value;
-  S.token = $("token").value.trim();
   S.quota = CONFIG.quota[S.session];
   if (!S.signer) { err.textContent = "Nhập tên người quay (có ít nhất một chữ cái hoặc số)."; err.hidden = false; return; }
-  if (!S.token) { err.textContent = "Nhập mã nhóm."; err.hidden = false; return; }
-  try { localStorage.setItem("vsign-setup", JSON.stringify({ signerName: $("signer").value, token: S.token, session: S.session })); } catch {}
+  try { localStorage.setItem("vsign-setup", JSON.stringify({ signerName: $("signer").value, session: S.session })); } catch {}
 
   const btn = $("start");
   btn.disabled = true;
   let stage = "server";
   try {
-    btn.textContent = "Đang kiểm tra mã nhóm và tiến độ…";
+    btn.textContent = "Đang kết nối và lấy tiến độ…";
     await loadCounts();
     stage = "camera";
     btn.textContent = "Đang mở camera…";

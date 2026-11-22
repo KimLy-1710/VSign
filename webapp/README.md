@@ -1,9 +1,9 @@
 # Web app thu thập dữ liệu
 
-Thành viên ở xa mở một đường link, quay bằng webcam của mình, và mỗi lượt đạt yêu cầu được tải thẳng lên một thư mục Google Drive chung. Không cần cài Python và không cần đăng nhập Google.
+Thành viên ở xa mở một đường link, quay bằng camera có sẵn của máy (laptop hoặc camera trước điện thoại), và mỗi lượt đạt yêu cầu được tải thẳng lên một thư mục Google Drive chung. Không cần cài Python, không cần đăng nhập, không cần mã.
 
 ```
-Trình duyệt thành viên ──(Apps Script, mã nhóm)──► thư mục Drive ──(đồng bộ)──► máy huấn luyện
+Trình duyệt thành viên ──(Apps Script)──────────► thư mục Drive ──(đồng bộ)──► máy huấn luyện
   quay 30 khung vuông, 12 khung/giây                một zip mỗi lượt                import_web_takes.py
   kiểm tra tay/người bằng MediaPipe JS                                                → data/raw, data/manifest.csv
 ```
@@ -13,23 +13,23 @@ Trình duyệt thành viên ──(Apps Script, mã nhóm)──► thư mục D
 - Quota và ngưỡng giống `collect_data.py`: buổi 1 quay 3 lượt, buổi 2 quay 2 lượt mỗi người cho mỗi ký hiệu. Lượt bị loại khi thấy tay dưới 50% hoặc thấy người dưới 80% số khung, hoặc khi máy chụp chậm hơn 9 khung/giây.
 - Tiến độ được lấy từ Drive, nên đổi máy hay tải lại trang vẫn tiếp tục được. Lượt chưa tải lên được (mất mạng) được giữ trong trình duyệt và tự gửi lại.
 
+**Không có mã truy cập:** ai có link cũng quay và tải lên được. Apps Script chỉ nhận đúng định dạng một lượt quay (tên file, 30 ảnh JPEG, giới hạn kích thước) và chỉ cho xóa lượt vừa tải lên trong 15 phút, nên không ai xóa được dữ liệu cũ. Lượt rác (nếu có) bị lọc khi chạy `import_web_takes.py`. Chỉ gửi link trong nhóm.
+
 ## Cài đặt (nhóm trưởng, làm một lần)
 
 ### 1. Thư mục Drive và Apps Script
 
 1. Tạo một thư mục trên Google Drive, ví dụ `VSign_uploads`. Mở thư mục đó và chép **id** của nó, là phần cuối URL sau `/folders/`.
 2. Vào <https://script.google.com>, chọn **New project**, rồi dán nội dung [`apps_script/Code.gs`](apps_script/Code.gs).
-3. Vào **Project Settings → Script properties** và thêm hai thuộc tính:
-   - `FOLDER_ID`: id thư mục ở bước 1.
-   - `TOKEN`: một mã nhóm khó đoán, ví dụ 16 ký tự ngẫu nhiên. Gửi riêng mã này cho các thành viên và **không đưa lên GitHub**.
+3. Vào **Project Settings → Script properties → Edit script properties → Add script property**: cột **Property** ghi `FOLDER_ID`, cột **Value** dán id thư mục ở bước 1, rồi bấm **Save script properties**.
 4. Chọn **Deploy → New deployment → Web app**, đặt *Execute as* là **Me** và *Who has access* là **Anyone**. Cấp quyền khi Google hỏi: script chỉ ghi vào Drive của bạn.
-5. Chép **Web app URL**, có dạng `https://script.google.com/macros/s/…/exec`.
+5. Chép **Web app URL**, có dạng `https://script.google.com/macros/s/…/exec`. Mở URL đó trên trình duyệt: đúng thì thấy `"has_folder_id":true`.
 
 Khi sửa `Code.gs`, chọn **Deploy → Manage deployments → Edit → Version: New version** để giữ nguyên URL.
 
 ### 2. Cấu hình và đưa web app lên Vercel
 
-1. Dán Web app URL vào `endpoint` trong [`config.js`](config.js). URL này công khai cũng không sao, vì mọi yêu cầu đều phải kèm mã nhóm.
+1. Dán Web app URL vào `endpoint` trong [`config.js`](config.js).
 2. Vào <https://vercel.com/new>, đăng nhập bằng GitHub, chọn repo `VSign` rồi bấm **Import → Deploy**. Giữ nguyên các thiết lập: [`vercel.json`](../vercel.json) ở gốc repo đã chỉ định đúng các file cần đưa lên (`webapp/` và `labels.json`). Repo để private cũng được.
 3. Gửi địa chỉ `https://<tên dự án>.vercel.app` cho các thành viên. Từ đó, mỗi lần push lên `main` thì Vercel tự deploy lại.
 
@@ -52,7 +52,7 @@ Quay bằng camera có sẵn của máy: camera laptop, hoặc camera trước c
 
 1. Mở link bằng **Chrome / Edge / Safari** trên laptop, hoặc **Chrome (Android) / Safari (iPhone)** trên điện thoại.
    - Nếu nhận link qua Zalo/Messenger: bấm ⋯ → **Mở bằng trình duyệt**. Trình duyệt bên trong Zalo/Messenger thường không cho dùng camera.
-2. Nhập tên (dùng đúng một tên cho cả hai buổi), chọn buổi quay, nhập mã nhóm, rồi cho phép dùng camera.
+2. Nhập tên (dùng đúng một tên cho cả hai buổi), chọn buổi quay, rồi cho phép dùng camera.
 3. Điện thoại: dựng máy cố định (giá đỡ hoặc tựa vào vật), dùng camera trước, không cầm tay. Đặt máy cách 1–1,5 m để thấy rõ mặt, hai vai và hai tay trong khung vuông. Đủ sáng, chỉ một người trong khung.
 4. Bấm **Bắt đầu quay** (laptop: phím **Space**). App tự đếm ngược, quay đủ số lượt rồi chuyển sang ký hiệu tiếp theo. Làm sai thì bấm **Xóa lượt cuối** (phím **D**). Bấm ◀ / ▶ hoặc chọn trong danh sách để đổi ký hiệu.
 5. Không chuyển sang app hay tab khác trong lúc quay: lượt đang quay sẽ bị bỏ. Chờ dòng "Mọi lượt đã lưu lên Drive ✓" rồi mới đóng trang.
