@@ -8,7 +8,7 @@ Mã hóa lại sang H.264 (trình duyệt và iPhone phát được), phóng lê
 
 Cần: dataset.zip, manifest.csv của prepare_visl.py, và imageio-ffmpeg (pip install imageio-ffmpeg).
     python webapp/make_references.py
-Kết quả: webapp/ref/<slug>.mp4 và webapp/references.json
+Kết quả: webapp/ref/<slug>.mp4, webapp/ref/<slug>.jpg (ảnh nhỏ cho phần xem trước) và webapp/references.json
 """
 from __future__ import annotations
 
@@ -58,6 +58,12 @@ def encode(src: Path, dst: Path) -> None:
                     "-crf", "26", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(dst)], check=True)
 
 
+def poster(video: Path, dst: Path) -> None:
+    """Ảnh nhỏ 160×160 (khung ở 40% thời lượng, thường đang giữa động tác) cho lưới xem trước ở màn hình đầu."""
+    subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-y", "-loglevel", "error", "-i", str(video),
+                    "-vf", "select=eq(n\\,12),scale=160:160", "-frames:v", "1", "-q:v", "6", str(dst)], check=True)
+
+
 def main() -> int:
     labels = sorted(json.loads((ROOT / "labels.json").read_text(encoding="utf-8")), key=lambda l: l["id"])
     with VISL.open(newline="", encoding="utf-8-sig") as f:
@@ -75,6 +81,7 @@ def main() -> int:
             src = Path(tmp) / video
             src.write_bytes(z.read(paths[video]))
             encode(src, OUT / f"{l['slug']}.mp4")
+            poster(OUT / f"{l['slug']}.mp4", OUT / f"{l['slug']}.jpg")
             refs[l["slug"]] = {
                 "video": f"ref/{l['slug']}.mp4", "visl_file": paths[video], "hand_ratio": float(r["hand_ratio"]),
                 "links": [{"label": f"QIPEDC: {name}", "url": QIPEDC_VIDEO.format(i)} for i, name in QIPEDC.get(l["slug"], [])],

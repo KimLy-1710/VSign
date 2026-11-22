@@ -327,7 +327,7 @@ async function finishTake(now) {
     await Queue.add({ name, meta, frames });
     S.saved.push(name);
     S.counts[l.id] = mine(l) + 1;
-    say(`Đã lưu lượt ${mine(l)}/${S.quota} ✓ Đưa tay về bụng`, "ok");
+    say(`Đã lưu lượt ${mine(l)}/${S.quota} ✓ Đưa tay về trước bụng`, "ok");
     Queue.pump();
   }
   if (S.running && mine(l) < S.quota) Object.assign(S, { state: "countdown", tState: performance.now() });
@@ -400,8 +400,8 @@ function render(now) {
   $("ref-toggle").hidden = !hasRef || S.state === "recording";
   vp.classList.toggle("recording", S.state === "recording");
   vp.classList.toggle("countdown", S.state === "countdown");
-  const [main, sub] = S.state === "countdown" ? [Math.ceil(CONFIG.countdown - (now - S.tState) / 1000), "Hai tay đặt ở bụng"]
-    : S.state === "recording" ? ["● Làm ký hiệu", "xong thì đưa tay về bụng"]
+  const [main, sub] = S.state === "countdown" ? [Math.ceil(CONFIG.countdown - (now - S.tState) / 1000), "Hai tay chụm trước bụng"]
+    : S.state === "recording" ? ["● Làm ký hiệu", "xong thì đưa tay về trước bụng"]
     : !S.frame.ok ? [S.frame.big, S.frame.hint] : ["", ""];
   $("big-main").textContent = main;
   $("big-sub").textContent = sub;
@@ -527,6 +527,30 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
+// Màn hình đầu: lưới 30 ký hiệu, bấm để xem video mẫu (lật như gương, giống lúc quay) và link QIPEDC nếu có.
+function renderGallery() {
+  const grid = $("gallery");
+  grid.replaceChildren(...S.labels.filter((l) => S.refs.signs[l.slug]).map((l) => {
+    const b = document.createElement("button");
+    b.className = "thumb";
+    b.innerHTML = `<img src="ref/${l.slug}.jpg" alt="" loading="lazy" width="160" height="160"><span>${pad(l.id)}. ${l.text}</span>`;
+    b.onclick = () => {
+      const r = S.refs.signs[l.slug];
+      $("preview").hidden = false;
+      $("preview-video").src = r.video;
+      $("preview-video").play().catch(() => {});
+      $("preview-name").textContent = `${pad(l.id)}. ${l.text}`;
+      $("preview-links").replaceChildren(...r.links.flatMap((k, i) => {
+        const a = Object.assign(document.createElement("a"), { href: k.url, target: "_blank", rel: "noopener", textContent: k.label });
+        return i ? [" · ", a] : [" · Tham khảo: ", a];
+      }));
+      grid.querySelectorAll(".thumb").forEach((t) => t.classList.toggle("on", t === b));
+      $("preview").scrollIntoView({ block: "nearest", behavior: "smooth" });
+    };
+    return b;
+  }));
+}
+
 async function main() {
   try { S.labels = (await (await fetch("labels.json")).json()).sort((a, b) => a.id - b.id); }
   catch (e) { $("setup-error").textContent = `Không tải được labels.json: ${e.message}`; $("setup-error").hidden = false; return; }
@@ -534,6 +558,8 @@ async function main() {
   try {
     S.refs = await (await fetch("references.json")).json();
     $("credit").innerHTML = `Video mẫu: <a href="${S.refs.source_url}" target="_blank" rel="noopener">${S.refs.source}</a>`;
+    $("gallery-credit").innerHTML = $("credit").innerHTML;
+    renderGallery();
   } catch { S.refs = null; }   // thiếu video mẫu vẫn quay được
   try { S.showRef = localStorage.getItem("vsign-hide-ref") !== "1"; } catch {}
   $("ref-toggle").onclick = () => {

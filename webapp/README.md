@@ -63,8 +63,8 @@ App tự hướng dẫn ngay trên màn hình (3 quy tắc có ảnh, video mẫ
 
 **3 quy tắc**
 1. **Đủ xa:** thấy từ đầu đến thắt lưng, cả hai tay luôn trong khung. Laptop: đẩy máy ra xa hoặc lùi ghế, khoảng 1 m. Điện thoại: dựng cố định, camera trước, cách 1–1,5 m. App báo **"Khoảng cách: tốt"** mới cho quay; quá gần sẽ báo **"Lùi ra xa"**.
-2. **Làm đủ động tác như video mẫu** ở góc khung hình. Video đã lật như gương: làm giống hệt hình, cùng phía tay. Bấm vào video để phóng to.
-3. **Bắt đầu và kết thúc ở tư thế nghỉ:** hai tay đặt nhẹ ở bụng. Đếm ngược thì để tay ở bụng, khung chuyển đỏ mới làm ký hiệu, làm xong đưa tay về bụng.
+2. **Làm đủ động tác như video mẫu.** Mỗi ký hiệu có video mẫu riêng: xem trước cả 30 ở màn hình đầu, và khi quay video hiện ở góc khung hình. Video đã lật như gương: làm giống hệt hình, cùng phía tay. Bấm vào video để phóng to.
+3. **Bắt đầu và kết thúc ở tư thế nghỉ:** hai tay chụm nhẹ trước bụng, tư thế chung của hầu hết video mẫu ở mọi ký hiệu. Đếm ngược thì giữ tư thế nghỉ, khung chuyển đỏ mới làm ký hiệu, làm xong đưa tay về trước bụng.
 
 **Cách quay**
 - Mở link bằng **Chrome / Edge / Safari** (laptop) hoặc **Chrome (Android) / Safari (iPhone)**. Nhận link qua Zalo/Messenger thì bấm ⋯ → **Mở bằng trình duyệt**.

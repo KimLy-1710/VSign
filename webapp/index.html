@@ -20,7 +20,7 @@
       <h2>Trước khi quay: 3 quy tắc</h2>
       <div class="rules">
         <figure class="rule good">
-          <img src="guide/rest.jpg" alt="Người đứng đúng khoảng cách, thấy từ đầu đến thắt lưng, hai tay đặt ở bụng" width="240" height="240">
+          <img src="guide/rest.jpg" alt="Người đứng đúng khoảng cách, thấy từ đầu đến thắt lưng, hai tay chụm trước bụng" width="240" height="240">
           <figcaption><b>1. Đủ xa: thấy từ đầu đến thắt lưng</b>Cả hai tay luôn nằm trong khung. Laptop: đẩy máy ra xa hoặc lùi ghế, khoảng 1 m. Điện thoại: dựng cố định, đứng hoặc ngồi cách 1–1,5 m.</figcaption>
         </figure>
         <figure class="rule bad">
@@ -28,20 +28,30 @@
           <figcaption><b>✗ Quá gần</b>Chỉ thấy đầu và vai, mất tay và thân. App sẽ báo “Lùi ra xa” và không cho quay.</figcaption>
         </figure>
         <figure class="rule good">
-          <img src="guide/sign.jpg" alt="Đang làm ký hiệu Chào giống video mẫu" width="240" height="240">
-          <figcaption><b>2. Làm đủ động tác như video mẫu</b>Video mẫu hiện ở góc khung hình, đã lật như gương: làm giống hệt hình, cùng phía tay.</figcaption>
+          <img src="guide/sign.jpg" alt="Bốn ký hiệu khác nhau đang được làm: Nhìn, Thức dậy, Cứu, Cảm ơn" width="240" height="240">
+          <figcaption><b>2. Làm đủ động tác như video mẫu</b>Mỗi ký hiệu có video mẫu riêng (xem trước ở dưới). Khi quay, video hiện ở góc khung hình, đã lật như gương: làm giống hệt hình, cùng phía tay.</figcaption>
         </figure>
       </div>
-      <p class="rule-3"><b>3. Bắt đầu và kết thúc ở tư thế nghỉ:</b> hai tay đặt nhẹ ở bụng như ảnh đầu tiên. Đếm ngược thì để tay ở bụng, khung chuyển đỏ mới làm ký hiệu, làm xong đưa tay về bụng.</p>
+      <p class="rule-3"><b>3. Bắt đầu và kết thúc ở tư thế nghỉ:</b> hai tay chụm nhẹ trước bụng như ảnh đầu tiên. Đây là tư thế chung của hầu hết video mẫu, ở mọi ký hiệu. Đếm ngược thì giữ tư thế nghỉ, khung chuyển đỏ mới làm ký hiệu, làm xong đưa tay về tư thế nghỉ.</p>
 
       <h3>Mỗi lượt diễn ra thế nào</h3>
       <ol class="timeline">
-        <li><span class="dot amber"></span><b>Đếm ngược 2 giây</b><small>Hai tay ở bụng, nhìn camera</small></li>
-        <li><span class="dot red"></span><b>Khung đỏ ~2,5 giây</b><small>Làm ký hiệu, xong về tư thế nghỉ</small></li>
+        <li><span class="dot amber"></span><b>Đếm ngược 2 giây</b><small>Hai tay chụm trước bụng, nhìn camera</small></li>
+        <li><span class="dot red"></span><b>Khung đỏ ~2,5 giây</b><small>Làm ký hiệu, xong đưa tay về trước bụng</small></li>
         <li><span class="dot green"></span><b>Tự lưu</b><small>Tự quay lượt tiếp đến khi đủ, rồi sang ký hiệu sau</small></li>
       </ol>
 
       <p class="device">📷 Camera laptop hoặc camera trước điện thoại · mở bằng Chrome / Safari (không mở trong Zalo, Messenger) · đủ sáng, nền gọn, chỉ một người trong khung.</p>
+    </div>
+
+    <div class="card gallery">
+      <h2>Xem trước 30 ký hiệu <span class="muted">· bấm để xem video mẫu</span></h2>
+      <figure id="preview" class="preview" hidden>
+        <video id="preview-video" muted loop playsinline autoplay></video>
+        <figcaption><b id="preview-name"></b><span id="preview-links"></span></figcaption>
+      </figure>
+      <div id="gallery" class="thumbs"></div>
+      <p class="credit" id="gallery-credit"></p>
     </div>
 
     <div class="card form">
@@ -92,8 +102,8 @@
       </div>
       <ol class="steps">
         <li>Xem video mẫu</li>
-        <li>Hai tay ở bụng, bấm <b>Bắt đầu quay</b></li>
-        <li>Khung đỏ: làm đủ động tác, xong về tư thế nghỉ</li>
+        <li>Hai tay chụm trước bụng, bấm <b>Bắt đầu quay</b></li>
+        <li>Khung đỏ: làm đủ động tác, xong đưa tay về trước bụng</li>
       </ol>
       <div id="ref-links" class="ref-links"></div>
       <div id="upload" class="upload"></div>
