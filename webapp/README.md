@@ -27,11 +27,11 @@ Trình duyệt thành viên ──(Apps Script, mã nhóm)──► thư mục D
 
 Khi sửa `Code.gs`, chọn **Deploy → Manage deployments → Edit → Version: New version** để giữ nguyên URL.
 
-### 2. Cấu hình và đưa web app lên GitHub Pages
+### 2. Cấu hình và đưa web app lên Vercel
 
 1. Dán Web app URL vào `endpoint` trong [`config.js`](config.js). URL này công khai cũng không sao, vì mọi yêu cầu đều phải kèm mã nhóm.
-2. Trên GitHub, vào **Settings → Pages → Source: GitHub Actions**. Repo phải public, hoặc tài khoản phải có GitHub Pro.
-3. Commit và push lên `main`. Workflow [`pages.yml`](../.github/workflows/pages.yml) sẽ deploy lên `https://<tài khoản>.github.io/VSign/`.
+2. Vào <https://vercel.com/new>, đăng nhập bằng GitHub, chọn repo `VSign` rồi bấm **Import → Deploy**. Giữ nguyên các thiết lập: [`vercel.json`](../vercel.json) ở gốc repo đã chỉ định đúng các file cần đưa lên (`webapp/` và `labels.json`). Repo để private cũng được.
+3. Gửi địa chỉ `https://<tên dự án>.vercel.app` cho các thành viên. Từ đó, mỗi lần push lên `main` thì Vercel tự deploy lại.
 
 ### 3. Nhận dữ liệu về máy huấn luyện
 

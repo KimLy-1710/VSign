@@ -20,3 +20,6 @@ venv/
 # Bản sao labels.json khi thử web app trên máy (bản deploy được sao chép tự động)
 webapp/labels.json
 .DS_Store
+
+# Thư mục build của Vercel (vercel.json)
+dist/

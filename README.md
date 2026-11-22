@@ -134,7 +134,8 @@ VSign/
 ├── collect_data.py    # Webcam recording tool
 ├── prepare_visl.py    # ViSignLanguage-Video → keypoints
 ├── import_web_takes.py # Web app takes (zip on Drive) → keypoints
-├── webapp/            # Browser collection tool + Apps Script upload endpoint (GitHub Pages)
+├── vercel.json        # Vercel deploy config for webapp/
+├── webapp/            # Browser collection tool + Apps Script upload endpoint (deployed on Vercel)
 ├── features.py        # Normalization, feature sets, augmentation (training + inference)
 ├── train.py           # Train / compare LSTM, GRU, Transformer; export TFLite
 ├── labels.json        # The 30 signs
