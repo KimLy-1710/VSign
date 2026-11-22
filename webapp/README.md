@@ -9,6 +9,16 @@ Trình duyệt thành viên ──(Apps Script)──────────►
 ```
 
 - Mỗi lượt là một file zip gồm 30 ảnh JPEG 480×480 (chưa lật gương) và `meta.json`, khoảng 0,2–1 MB. Tên file có dạng `<người>_s<buổi>_<id>_<slug>_<thời gian>.zip`.
+- Trên Drive, Apps Script tự chia thư mục theo người quay và buổi quay, nên nhìn số file trong mỗi thư mục là biết ai đã quay đủ chưa (buổi 1: 90 file, buổi 2: 60 file mỗi người). Hai thư mục cho cùng một người với tên khác nhau (ví dụ `tran/` và `baotran/`) nghĩa là người đó đã gõ tên không thống nhất:
+  ```
+  VSign_uploads/
+  ├── baotran/
+  │   ├── buoi1/   baotran_s1_….zip
+  │   └── buoi2/   baotran_s2_….zip
+  ├── minhthong/
+  │   └── …
+  └── _rejected/   lượt bị loại khi chạy import_web_takes.py
+  ```
 - Keypoints chính thức được trích trên máy huấn luyện bằng MediaPipe Python, giống hệt tập ViSL. Phần kiểm tra trong trình duyệt chỉ để báo người quay quay lại ngay khi không thấy tay hoặc người.
 - Quota và ngưỡng giống `collect_data.py`: buổi 1 quay 3 lượt, buổi 2 quay 2 lượt mỗi người cho mỗi ký hiệu. Lượt bị loại khi thấy tay dưới 50% hoặc thấy người dưới 80% số khung, hoặc khi máy chụp chậm hơn 9 khung/giây.
 - **Video mẫu cho từng ký hiệu:** một clip ViSignLanguage-Video (CC BY 4.0) hiện ở góc khung camera, đã lật như gương để người quay làm giống hệt hình. Video tự ẩn khi đang quay. Nên làm theo clip này vì mô hình được huấn luyện trên chính tập ViSL. Với 13 ký hiệu có trong từ điển [QIPEDC](https://qipedc.moet.gov.vn/dictionary) của Bộ GD&ĐT, app hiện thêm link tham khảo; QIPEDC có thể là biến thể vùng miền khác. Tạo lại clip: `python webapp/make_references.py` (cần `pip install imageio-ffmpeg`).
@@ -26,7 +36,7 @@ Trình duyệt thành viên ──(Apps Script)──────────►
 4. Chọn **Deploy → New deployment → Web app**, đặt *Execute as* là **Me** và *Who has access* là **Anyone**. Cấp quyền khi Google hỏi: script chỉ ghi vào Drive của bạn.
 5. Chép **Web app URL**, có dạng `https://script.google.com/macros/s/…/exec`. Mở URL đó trên trình duyệt: đúng thì thấy `"has_folder_id":true`.
 
-Khi sửa `Code.gs`, chọn **Deploy → Manage deployments → Edit → Version: New version** để giữ nguyên URL.
+Khi sửa `Code.gs`, chọn **Deploy → Manage deployments → Edit → Version: New version** để giữ nguyên URL. Mở URL `/exec` để xem phiên bản đang chạy (`"version"`).
 
 ### 2. Cấu hình và đưa web app lên Vercel
 
@@ -43,7 +53,7 @@ python import_web_takes.py --src "<đường dẫn tới thư mục VSign_upload
 python collect_data.py --summary
 ```
 
-Script chỉ xử lý các lượt mới và ghi lại mọi lượt trong `data/web_import_log.csv`. Lượt bị loại được chuyển vào `VSign_uploads/_rejected/`. Khi Drive đồng bộ xong, web app sẽ tính các lượt đó là còn thiếu, nên người quay chỉ cần mở lại link và quay bù.
+Script đọc mọi thư mục con (`<người>/buoi1`, `<người>/buoi2`), chỉ xử lý các lượt mới và ghi lại mọi lượt trong `data/web_import_log.csv`. Lượt bị loại được chuyển vào `VSign_uploads/_rejected/`. Khi Drive đồng bộ xong, web app sẽ tính các lượt đó là còn thiếu, nên người quay chỉ cần mở lại link và quay bù.
 
 Không cài Drive cho máy tính thì tải thư mục về dạng zip, giải nén, rồi chạy `--src` vào đó. Với cách này, lượt bị loại không tự hiện lại trên web app, nên phải nhắn người quay quay bù.
 

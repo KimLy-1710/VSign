@@ -6,6 +6,7 @@ Python dùng cho tập ViSL (keypoints.py), áp cùng ngưỡng với collect_da
     data/raw/<id>_<slug>/<tên lượt>.npy     (30, 1662), giống collect_data.py
     data/manifest.csv                       thêm một dòng mỗi lượt đạt
     data/web_import_log.csv                 mọi lượt đã xử lý (đạt / loại và lý do), để không xử lý lại
+Thư mục nguồn có dạng <src>/<người>/buoi1|buoi2/*.zip (Apps Script tự chia); zip nằm thẳng ở <src> cũng được đọc.
 Lượt bị loại được chuyển vào <src>/_rejected/. Nếu <src> là thư mục Drive đồng bộ, web app sẽ thấy
 lượt đó còn thiếu và người quay chỉ cần quay lại.
 
@@ -143,7 +144,7 @@ def main(argv=None) -> int:
             done = {r["zip"] for r in csv.DictReader(f) if r["status"] == "ok"}
     existing = {Path(r).stem for r in _manifest_files(data_dir)}
 
-    zips = sorted(z for z in src.glob("*.zip") if z.name not in done and z.stem not in existing)
+    zips = [z for z in find_zips(src, include_rejected=args.retry_rejected) if z.name not in done and z.stem not in existing]
     print(f"{len(zips)} lượt mới trong {src} (bỏ qua {len(done)} lượt đã xử lý).")
     counts = {"ok": 0, "rejected": 0}
     for i, z in enumerate(zips, 1):
@@ -156,13 +157,27 @@ def main(argv=None) -> int:
             append_log(log_path, row)
             if row["status"] == "rejected" and not args.keep_rejected:
                 # chuyển ra khỏi thư mục gốc: web app chỉ đếm file ở thư mục gốc, nên người quay sẽ thấy thiếu và quay lại
-                (src / REJECTED_DIR).mkdir(exist_ok=True)
-                z.replace(src / REJECTED_DIR / z.name)
+                if REJECTED_DIR not in z.relative_to(src).parts:
+                    (src / REJECTED_DIR).mkdir(exist_ok=True)
+                    z.replace(src / REJECTED_DIR / z.name)
     print(f"Xong: {counts['ok']} đạt, {counts['rejected']} loại.")
     if counts["rejected"] and not args.dry_run and not args.keep_rejected:
         print(f"Lượt bị loại đã chuyển vào {src / REJECTED_DIR}. Khi thư mục Drive đồng bộ xong, web app "
               "sẽ tính các lượt đó là còn thiếu để người quay quay lại.")
     return 0
+
+
+def find_zips(src: Path, include_rejected: bool = False) -> list[Path]:
+    """Mọi file zip trong src và thư mục con (<người>/buoi<n>/), bỏ qua _rejected/ trừ khi xử lý lại.
+    Trùng tên (ví dụ cùng lượt ở thư mục gốc và thư mục con) thì chỉ lấy một."""
+    seen, out = set(), []
+    for z in sorted(src.rglob("*.zip")):
+        rel = z.relative_to(src).parts
+        if (REJECTED_DIR in rel[:-1] and not include_rejected) or z.name in seen:
+            continue
+        seen.add(z.name)
+        out.append(z)
+    return out
 
 
 def _manifest_files(data_dir: Path) -> list[str]:
