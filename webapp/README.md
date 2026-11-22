@@ -21,7 +21,7 @@ Trình duyệt thành viên ──(Apps Script)──────────►
   ```
 - Keypoints chính thức được trích trên máy huấn luyện bằng MediaPipe Python, giống hệt tập ViSL. Phần kiểm tra trong trình duyệt chỉ để báo người quay quay lại ngay khi không thấy tay hoặc người.
 - Quota và ngưỡng giống `collect_data.py`: buổi 1 quay 3 lượt, buổi 2 quay 2 lượt mỗi người cho mỗi ký hiệu. Lượt bị loại khi thấy tay dưới 50% hoặc thấy người dưới 80% số khung, hoặc khi máy chụp chậm hơn 9 khung/giây.
-- **Video mẫu cho từng ký hiệu:** một clip ViSignLanguage-Video (CC BY 4.0) hiện ở góc khung camera, đã lật như gương để người quay làm giống hệt hình. Video tự ẩn khi đang quay. Nên làm theo clip này vì mô hình được huấn luyện trên chính tập ViSL. Với 13 ký hiệu có trong từ điển [QIPEDC](https://qipedc.moet.gov.vn/dictionary) của Bộ GD&ĐT, app hiện thêm link tham khảo; QIPEDC có thể là biến thể vùng miền khác. Tạo lại clip: `python webapp/make_references.py` (cần `pip install imageio-ffmpeg`).
+- **Video mẫu cho từng ký hiệu:** một clip ViSignLanguage-Video (CC BY 4.0) hiện ở góc khung camera, đã lật như gương để người quay làm giống hệt hình. Video tự ẩn khi đang quay. Nên làm theo clip này vì mô hình được huấn luyện trên chính tập ViSL. Với 13 ký hiệu có trong từ điển [QIPEDC](https://qipedc.moet.gov.vn/dictionary) của Bộ GD&ĐT, app hiện thêm link tham khảo. Tạo lại clip: `python webapp/make_references.py` (cần `pip install imageio-ffmpeg`).
 - Tiến độ được lấy từ Drive, nên đổi máy hay tải lại trang vẫn tiếp tục được. Lượt chưa tải lên được (mất mạng) được giữ trong trình duyệt và tự gửi lại.
 
 **Không có mã truy cập:** ai có link cũng quay và tải lên được. Apps Script chỉ nhận đúng định dạng một lượt quay (tên file, 30 ảnh JPEG, giới hạn kích thước) và chỉ cho xóa lượt vừa tải lên trong 15 phút, nên không ai xóa được dữ liệu cũ. Lượt rác (nếu có) bị lọc khi chạy `import_web_takes.py`. Chỉ gửi link trong nhóm.
@@ -63,7 +63,7 @@ App tự hướng dẫn ngay trên màn hình (3 quy tắc có ảnh, video mẫ
 
 **3 quy tắc**
 1. **Đủ xa:** thấy từ đầu đến thắt lưng, cả hai tay luôn trong khung. Laptop: đẩy máy ra xa hoặc lùi ghế, khoảng 1 m. Điện thoại: dựng cố định, camera trước, cách 1–1,5 m. App báo **"Khoảng cách: tốt"** mới cho quay; quá gần sẽ báo **"Lùi ra xa"**.
-2. **Làm đủ động tác như video mẫu.** Mỗi ký hiệu có video mẫu riêng: xem trước cả 30 ở màn hình đầu, và khi quay video hiện ở góc khung hình. Video đã lật như gương: làm giống hệt hình, cùng phía tay. Bấm vào video để phóng to.
+2. **Làm đủ động tác như video mẫu.** Mỗi ký hiệu có video mẫu riêng, hiện ở góc khung hình khi quay. Video đã lật như gương: làm giống hệt hình, cùng phía tay. Bấm vào video để phóng to.
 3. **Bắt đầu và kết thúc ở tư thế nghỉ:** hai tay chụm nhẹ trước bụng, tư thế chung của hầu hết video mẫu ở mọi ký hiệu. Đếm ngược thì giữ tư thế nghỉ, khung chuyển đỏ mới làm ký hiệu, làm xong đưa tay về trước bụng.
 
 **Cách quay**

@@ -42,15 +42,15 @@
    "hand_ratio": 1.0,
    "links": [
     {
-     "label": "QIPEDC: giúp đỡ (Bắc)",
+     "label": "QIPEDC: giúp đỡ 1",
      "url": "https://qipedc.moet.gov.vn/videos/W01497B.mp4"
     },
     {
-     "label": "QIPEDC: giúp đỡ (Trung)",
+     "label": "QIPEDC: giúp đỡ 2",
      "url": "https://qipedc.moet.gov.vn/videos/W01497T.mp4"
     },
     {
-     "label": "QIPEDC: giúp đỡ (Nam)",
+     "label": "QIPEDC: giúp đỡ 3",
      "url": "https://qipedc.moet.gov.vn/videos/W01497N.mp4"
     }
    ]
@@ -217,15 +217,15 @@
    "hand_ratio": 1.0,
    "links": [
     {
-     "label": "QIPEDC: buổi trưa (Bắc)",
+     "label": "QIPEDC: buổi trưa 1",
      "url": "https://qipedc.moet.gov.vn/videos/W00370B.mp4"
     },
     {
-     "label": "QIPEDC: buổi trưa (Trung)",
+     "label": "QIPEDC: buổi trưa 2",
      "url": "https://qipedc.moet.gov.vn/videos/W00370T.mp4"
     },
     {
-     "label": "QIPEDC: buổi trưa (Nam)",
+     "label": "QIPEDC: buổi trưa 3",
      "url": "https://qipedc.moet.gov.vn/videos/W00370N.mp4"
     }
    ]
