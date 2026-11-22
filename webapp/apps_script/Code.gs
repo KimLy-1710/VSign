@@ -23,8 +23,12 @@ function doPost(e) {
   try {
     var req = JSON.parse(e.postData.contents);
     var props = PropertiesService.getScriptProperties();
-    if (!req.token || req.token !== props.getProperty("TOKEN")) return reply({ok: false, error: "Sai mã nhóm"});
-    var folder = DriveApp.getFolderById(props.getProperty("FOLDER_ID"));
+    var expected = (props.getProperty("TOKEN") || "").trim();   // bỏ dấu cách / xuống dòng thừa khi dán
+    var folderId = (props.getProperty("FOLDER_ID") || "").trim();
+    if (!expected) return reply({ok: false, error: "Apps Script chưa có thuộc tính TOKEN (Project Settings → Script properties)"});
+    if (!folderId) return reply({ok: false, error: "Apps Script chưa có thuộc tính FOLDER_ID (Project Settings → Script properties)"});
+    if (String(req.token || "").trim() !== expected) return reply({ok: false, error: "Sai mã nhóm"});
+    var folder = DriveApp.getFolderById(folderId);
     if (req.action === "upload") return reply(upload(folder, req));
     if (req.action === "list") return reply(list(folder, req));
     if (req.action === "delete") return reply(remove(folder, req));
@@ -35,7 +39,14 @@ function doPost(e) {
 }
 
 function doGet() {
-  return reply({ok: true, service: "vsign-collect"});
+  // Cho biết cấu hình đã đủ chưa, KHÔNG để lộ giá trị: mở URL /exec trên trình duyệt để kiểm tra.
+  // Chỉ in true/false và số lượng, không bao giờ in tên hay giá trị thuộc tính (người dùng có thể dán nhầm mã vào cột tên).
+  var props = PropertiesService.getScriptProperties();
+  var others = props.getKeys().filter(function (k) { return k !== "TOKEN" && k !== "FOLDER_ID"; }).length;
+  return reply({ok: true, service: "vsign-collect", version: 3,
+    has_token: !!(props.getProperty("TOKEN") || "").trim(),
+    has_folder_id: !!(props.getProperty("FOLDER_ID") || "").trim(),
+    other_properties: others});   // > 0 thường là đặt sai tên (ví dụ "Token") hoặc dán giá trị vào cột tên
 }
 
 function upload(folder, req) {

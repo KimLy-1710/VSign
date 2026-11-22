@@ -21,7 +21,7 @@ button:disabled { opacity: .5; cursor: default; }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 button.link { border: 0; background: none; color: var(--accent); padding: 8px 0; }
 kbd { font-size: 11px; opacity: .8; border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; margin-left: 4px; }
-.error { color: var(--bad); }
+.error { color: var(--bad); white-space: pre-line; line-height: 1.5; }
 
 #setup { max-width: 560px; margin: 24px auto; display: grid; gap: 14px; }
 #setup label { display: grid; gap: 4px; }

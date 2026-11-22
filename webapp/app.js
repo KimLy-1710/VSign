@@ -43,8 +43,53 @@ async function api(body) {
     body: JSON.stringify({ token: S.token, ...body }) });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   const data = await r.json();
-  if (!data.ok) throw Object.assign(new Error(data.error || "Lỗi máy chủ"), { fatal: data.error === "Sai mã nhóm" });
+  // Sai mã nhóm hoặc Apps Script thiếu cấu hình: thử lại cũng vô ích → dừng hẳn (khác với lỗi mạng tạm thời).
+  if (!data.ok) throw Object.assign(new Error(data.error || "Lỗi máy chủ"), { fatal: /Sai mã nhóm|chưa có thuộc tính/.test(data.error || "") });
   return data;
+}
+
+// ---------------------------------------------------------------- lỗi camera → hướng dẫn tiếng Việt
+
+function cameraError(e) {
+  const reload = "Sửa xong thì tải lại trang (F5) và bấm bắt đầu lần nữa.";
+  switch (e.name) {
+    case "NotFoundError":
+    case "OverconstrainedError":
+    case "DevicesNotFoundError":
+      return "Không tìm thấy camera nào trên máy này. Kiểm tra:\n"
+        + "• Máy có webcam: laptop có thể có nắp trượt hoặc phím Fn tắt camera; webcam rời phải được cắm.\n"
+        + "• Windows: Settings → Privacy & security → Camera → bật \"Camera access\" và \"Let desktop apps access your camera\".\n"
+        + "• macOS: System Settings → Privacy & Security → Camera → bật cho trình duyệt đang dùng.\n" + reload;
+    case "NotAllowedError":
+    case "PermissionDeniedError":
+      return "Trình duyệt hoặc hệ điều hành đang chặn camera. Bấm biểu tượng ổ khóa / camera bên trái thanh địa chỉ → "
+        + "Camera: Cho phép (Allow). Trên macOS còn cần bật trình duyệt trong System Settings → Privacy & Security → Camera.\n" + reload;
+    case "NotReadableError":
+    case "TrackStartError":
+    case "AbortError":
+      return "Camera đang bị ứng dụng khác dùng (Zoom, Google Meet, Teams, OBS, tab khác…). Đóng ứng dụng đó rồi thử lại.\n" + reload;
+    case "SecurityError":
+    case "TypeError":
+      return "Trình duyệt không cho dùng camera ở trang này. Hãy mở đúng link https bằng Chrome, Edge hoặc Safari (không mở trong Zalo/Messenger).";
+    default:
+      return `Không mở được camera (${e.name}: ${e.message}).\n${reload}`;
+  }
+}
+
+// Thử lần lượt từ yêu cầu chi tiết đến đơn giản nhất: một số camera / driver từ chối độ phân giải hoặc deviceId đã lưu.
+async function getStream(deviceId) {
+  if (!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error("no mediaDevices"), { name: "SecurityError" });
+  const attempts = [
+    { deviceId: deviceId ? { exact: deviceId } : undefined, width: { ideal: 1280 }, height: { ideal: 720 } },
+    deviceId ? { deviceId: { exact: deviceId } } : true,
+    true,
+  ];
+  let last;
+  for (const video of attempts) {
+    try { return await navigator.mediaDevices.getUserMedia({ audio: false, video }); }
+    catch (e) { last = e; if (e.name === "NotAllowedError" || e.name === "SecurityError") break; }
+  }
+  throw last;
 }
 
 // ---------------------------------------------------------------- hàng đợi tải lên (IndexedDB, không mất khi tải lại trang)
@@ -165,8 +210,7 @@ async function openCamera(deviceId) {
   if (DEMO_SRC) {
     video.src = DEMO_SRC; video.loop = true;
   } else {
-    S.stream = await navigator.mediaDevices.getUserMedia({ audio: false,
-      video: { deviceId: deviceId ? { exact: deviceId } : undefined, width: { ideal: 1280 }, height: { ideal: 720 } } });
+    S.stream = await getStream(deviceId);
     video.srcObject = S.stream;
   }
   await video.play();
@@ -347,15 +391,19 @@ async function start() {
 
   const btn = $("start");
   btn.disabled = true;
+  let stage = "server";
   try {
     btn.textContent = "Đang kiểm tra mã nhóm và tiến độ…";
     await loadCounts();
+    stage = "camera";
     btn.textContent = "Đang mở camera…";
     await openCamera();
+    stage = "models";
     if (!S.hand) { btn.textContent = "Đang tải mô hình nhận diện…"; await initModels(); }
   } catch (e) {
-    err.textContent = e.fatal ? "Sai mã nhóm." : e.name === "NotAllowedError"
-      ? "Trình duyệt chưa được cấp quyền dùng camera. Cho phép camera rồi thử lại." : `Không bắt đầu được: ${e.message}`;
+    err.textContent = stage === "server" ? (e.fatal ? `${e.message}.` : `Không kết nối được máy chủ: ${e.message}`)
+      : stage === "camera" ? cameraError(e)
+      : `Không tải được mô hình nhận diện (${e.message}). Kiểm tra mạng rồi thử lại.`;
     err.hidden = false;
     btn.disabled = false; btn.textContent = "Mở camera và bắt đầu";
     return;
@@ -382,7 +430,7 @@ async function main() {
   $("prev").onclick = () => move(-1);
   $("next").onclick = () => move(1);
   $("undo").onclick = undo;
-  $("camera").onchange = (e) => openCamera(e.target.value).catch((x) => say(`Không đổi được camera: ${x.message}`, "bad"));
+  $("camera").onchange = (e) => openCamera(e.target.value).catch((x) => say(cameraError(x).split("\n")[0], "bad"));
   $("change").onclick = () => { $("studio").hidden = true; $("setup").hidden = false; $("start").disabled = false; $("start").textContent = "Mở camera và bắt đầu"; };
   window.addEventListener("beforeunload", (e) => { if (Queue.busy) e.preventDefault(); });
 }
