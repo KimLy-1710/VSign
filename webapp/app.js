@@ -5,7 +5,7 @@ import { FilesetResolver, HandLandmarker, PoseLandmarker, DrawingUtils } from
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
 import { CONFIG } from "./config.js";
 
-const APP_VERSION = "1";
+const APP_VERSION = "2";   // 2: chờ tư thế nghỉ trước mỗi lượt, loại lượt bị cắt khi tay còn đang làm
 const WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 const HAND_MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task";
 const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task";
@@ -28,7 +28,10 @@ const S = {
   stream: null, message: "", tMessage: 0,
   refs: null, refSlug: null, showRef: true,   // video mẫu (references.json)
   shoulder: null, frame: { ok: false, text: "Chưa thấy người" },   // kiểm tra khoảng cách (độ rộng vai, làm mượt)
+  rest: { ok: false, wrists: null }, restSince: null, restLostSince: null,   // tư thế nghỉ (hai tay trước bụng)
 };
+// Trạng thái: idle → waitrest (chờ hai tay về trước bụng và giữ yên) → countdown → recording → waitrest …
+// Mỗi lượt vì thế luôn bắt đầu từ tư thế nghỉ, kể cả khi các lượt nối tiếp nhau.
 
 // ---------------------------------------------------------------- tiện ích
 
@@ -268,6 +271,7 @@ function loop() {
       S.handOn = S.hr.landmarks.length > 0;
       S.poseOn = S.pr.landmarks.length > 0;
       updateFraming(S.pr);
+      updateRest(S.pr, now);
     }
 
     tick(now, work);
@@ -287,18 +291,30 @@ function loop() {
 }
 
 function tick(now, work) {
-  if (S.state === "countdown" && now - S.tState >= CONFIG.countdown * 1000) {
-    if (!S.frame.ok) {   // người quay di chuyển trong lúc đếm ngược → dừng, không quay lượt hỏng
-      Object.assign(S, { running: false, state: "idle" });
-      say(`Đã dừng: ${S.frame.text}. Chỉnh lại rồi bấm Bắt đầu quay.`, "bad");
+  if (S.state === "waitrest") {
+    if (S.frame.ok && S.rest.ok && now - S.restSince >= CONFIG.restHoldMs) Object.assign(S, { state: "countdown", tState: now });
+    return;
+  }
+  if (S.state === "countdown") {
+    if (!S.rest.ok && now - S.restLostSince >= CONFIG.restLostMs) {   // giơ tay sớm → chờ lại, không quay lượt bắt đầu giữa chừng
+      S.state = "waitrest";
+      say("Giữ hai tay trước bụng cho đến khi khung chuyển đỏ.", "bad");
       return;
     }
-    Object.assign(S, { state: "recording", frames: [], flags: [], tFirst: now, tNext: now });
+    if (now - S.tState >= CONFIG.countdown * 1000) {
+      if (!S.frame.ok) {   // người quay di chuyển trong lúc đếm ngược → dừng, không quay lượt hỏng
+        Object.assign(S, { running: false, state: "idle" });
+        say(`Đã dừng: ${S.frame.text}. Chỉnh lại rồi bấm Bắt đầu quay.`, "bad");
+        return;
+      }
+      if (!S.rest.ok) { S.state = "waitrest"; return; }
+      Object.assign(S, { state: "recording", frames: [], flags: [], tFirst: now, tNext: now });
+    }
   }
   if (S.state !== "recording" || now < S.tNext) return;
   S.tNext += 1000 / CONFIG.fps;
   S.frames.push(work.toDataURL("image/jpeg", CONFIG.jpegQuality).split(",")[1]);   // ảnh gốc, CHƯA lật gương
-  S.flags.push([S.handOn, S.poseOn, S.lastShoulder]);
+  S.flags.push([S.handOn, S.poseOn, S.lastShoulder, S.rest.ok, S.rest.wrists]);
   if (S.frames.length < CONFIG.frames) return;
   finishTake(now);
 }
@@ -310,6 +326,7 @@ async function finishTake(now) {
   const fps = (CONFIG.frames - 1) / Math.max((now - S.tFirst) / 1000, 1e-6);
   const widths = S.flags.map((f) => f[2]).filter((w) => w != null).sort((a, b) => a - b);
   const shoulder = widths.length ? widths[Math.floor(widths.length / 2)] : null;   // trung vị cả lượt
+  const { endRest, endSpeed } = takeEnding(S.flags);
   const frames = S.frames;
   S.frames = [];
   S.state = "idle";
@@ -318,11 +335,13 @@ async function finishTake(now) {
   else if (poseRatio < CONFIG.minPoseRatio) say(`Loại: chỉ thấy người ở ${Math.round(poseRatio * 100)}% số khung, quay lại`, "bad");
   else if (shoulder != null && shoulder > CONFIG.maxShoulder) say("Loại: quá gần camera trong lúc quay. Lùi ra xa (thấy đến thắt lưng) rồi quay lại", "bad");
   else if (shoulder != null && shoulder < CONFIG.minShoulder) say("Loại: quá xa camera trong lúc quay. Lại gần hơn rồi quay lại", "bad");
+  else if (!endRest && endSpeed > CONFIG.cutSpeed) say("Loại: hết giờ khi tay còn đang làm. Khung đỏ là làm ngay, làm gọn rồi đưa tay về trước bụng", "bad");
   else {
     const name = `${S.signer}_s${S.session}_${pad(l.id)}_${l.slug}_${stamp()}`;
     const meta = { name, label_id: l.id, slug: l.slug, text: l.text, signer: S.signer, session: S.session,
       recorded_at: new Date().toISOString(), frames: CONFIG.frames, size: CONFIG.size, fps: +fps.toFixed(1),
       browser_hand_ratio: +handRatio.toFixed(2), browser_pose_ratio: +poseRatio.toFixed(2), browser_shoulder_width: shoulder == null ? null : +shoulder.toFixed(3),
+      browser_start_rest: !!S.flags[0]?.[3], browser_end_rest: endRest, browser_end_speed: +endSpeed.toFixed(3),
       ...cameraInfo(), user_agent: navigator.userAgent, app_version: APP_VERSION };
     await Queue.add({ name, meta, frames });
     S.saved.push(name);
@@ -330,7 +349,7 @@ async function finishTake(now) {
     say(`Đã lưu lượt ${mine(l)}/${S.quota} ✓ Đưa tay về trước bụng`, "ok");
     Queue.pump();
   }
-  if (S.running && mine(l) < S.quota) Object.assign(S, { state: "countdown", tState: performance.now() });
+  if (S.running && mine(l) < S.quota) S.state = "waitrest";   // lượt sau chỉ bắt đầu khi tay đã về trước bụng
   else if (S.running) {
     S.running = false;
     const nxt = nextMissing(S.idx + 1);
@@ -370,6 +389,39 @@ function updateFraming(pr) {
   if (now - S.badSince >= FRAME_BAD_MS || !S.everOk) S.frame = status;   // lần đầu chưa từng tốt thì báo ngay
 }
 
+// Tư thế nghỉ: cả hai cổ tay thấp hơn đường vai ít nhất CONFIG.restDepth × độ rộng vai (tay chụm trước bụng ≈ 1,1;
+// tay buông xuôi hoặc ra khỏi mép dưới khung cũng tính là nghỉ). Lưu vị trí cổ tay theo đơn vị độ rộng vai để đo tốc độ.
+function measureRest(pr) {
+  const lm = pr?.landmarks?.[0];
+  if (!lm) return { ok: false, depth: null, wrists: null };
+  const l = lm[11], r = lm[12];
+  const sw = Math.hypot(l.x - r.x, l.y - r.y);
+  if (!(sw > 0.05)) return { ok: false, depth: null, wrists: null };
+  const shY = (l.y + r.y) / 2;
+  const wr = [lm[15], lm[16]];
+  const depth = Math.min(...wr.map((p) => (p.y - shY) / sw));   // cổ tay cao hơn quyết định
+  return { ok: depth >= CONFIG.restDepth, depth, wrists: wr.map((p) => [p.x / sw, p.y / sw]) };
+}
+
+function updateRest(pr, now) {
+  S.rest = measureRest(pr);
+  if (S.rest.ok) { S.restSince ??= now; S.restLostSince = null; }
+  else { S.restSince = null; S.restLostSince ??= now; }
+}
+
+// Cuối lượt: tay đã về nghỉ chưa, và tốc độ cổ tay lớn nhất ở hai khoảng cuối (độ rộng vai mỗi khung).
+// Chưa về nghỉ mà còn chạy nhanh = bị cắt giữa động tác. Giữ yên tư thế cuối (Nhà, Trường học…) thì vẫn đạt.
+function takeEnding(flags) {
+  const endRest = !!flags[flags.length - 1]?.[3];
+  const w = flags.slice(-3).map((f) => f[4]);
+  let endSpeed = 0;
+  for (let i = 1; i < w.length; i++) {
+    if (!w[i] || !w[i - 1]) continue;
+    for (let j = 0; j < 2; j++) endSpeed = Math.max(endSpeed, Math.hypot(w[i][j][0] - w[i - 1][j][0], w[i][j][1] - w[i - 1][j][1]));
+  }
+  return { endRest, endSpeed };
+}
+
 // Video mẫu ViSL của ký hiệu hiện tại (lật như gương trong CSS) và link tham khảo QIPEDC.
 function showReference(l) {
   S.refSlug = l.slug;
@@ -400,9 +452,12 @@ function render(now) {
   $("ref-toggle").hidden = !hasRef || S.state === "recording";
   vp.classList.toggle("recording", S.state === "recording");
   vp.classList.toggle("countdown", S.state === "countdown");
-  const [main, sub] = S.state === "countdown" ? [Math.ceil(CONFIG.countdown - (now - S.tState) / 1000), "Hai tay chụm trước bụng"]
+  vp.classList.toggle("waiting", S.state === "waitrest");
+  const [main, sub] = S.state === "countdown" ? [Math.ceil(CONFIG.countdown - (now - S.tState) / 1000), "Giữ hai tay trước bụng"]
     : S.state === "recording" ? ["● Làm ký hiệu", "xong thì đưa tay về trước bụng"]
-    : !S.frame.ok ? [S.frame.big, S.frame.hint] : ["", ""];
+    : !S.frame.ok ? [S.frame.big, S.frame.hint]
+    : S.state === "waitrest" ? (S.rest.ok ? ["Giữ yên…", "sắp bắt đầu đếm ngược"] : ["Đưa hai tay về trước bụng", "giữ yên để bắt đầu lượt tiếp"])
+    : ["", ""];
   $("big-main").textContent = main;
   $("big-sub").textContent = sub;
   $("rec-bar").hidden = S.state !== "recording";
@@ -424,7 +479,7 @@ function toggle() {
   if (S.state === "idle") {
     if (mine() >= S.quota) return say("Ký hiệu này đã đủ lượt. Chọn ký hiệu khác ở danh sách bên phải.");
     if (!S.frame.ok) return say(`Chưa quay được: ${S.frame.text}.`, "bad");
-    Object.assign(S, { running: true, state: "countdown", tState: performance.now() });
+    Object.assign(S, { running: true, state: "waitrest" });
   } else {
     Object.assign(S, { running: false, state: "idle", frames: [] });
     say("Tạm dừng, lượt đang quay dở đã bỏ.");

@@ -76,6 +76,7 @@ label.radio { display: flex !important; gap: 8px; align-items: flex-start; }
 .viewport { position: relative; width: 100%; max-width: 620px; aspect-ratio: 1; margin: 0 auto; background: #000; border-radius: 12px; overflow: hidden; border: 6px solid transparent; }
 .viewport.recording { border-color: var(--bad); }
 .viewport.countdown { border-color: var(--warn); }
+.viewport.waiting { border-color: var(--line); }
 #view { width: 100%; height: 100%; display: block; transform: scaleX(-1); }   /* lật gương để xem, ảnh lưu thì không lật */
 .overlay { position: absolute; left: 0; right: 0; padding: 10px 14px; color: #fff; text-shadow: 0 1px 3px #000; pointer-events: none; }
 .overlay.top { top: 0; background: linear-gradient(#0009, transparent); }

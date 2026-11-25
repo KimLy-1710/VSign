@@ -64,12 +64,12 @@ App tự hướng dẫn ngay trên màn hình (3 quy tắc có ảnh, video mẫ
 **3 quy tắc**
 1. **Đủ xa:** thấy từ đầu đến thắt lưng, cả hai tay luôn trong khung. Laptop: đẩy máy ra xa hoặc lùi ghế, khoảng 1 m. Điện thoại: dựng cố định, camera trước, cách 1–1,5 m. App báo **"Khoảng cách: tốt"** mới cho quay; quá gần sẽ báo **"Lùi ra xa"**.
 2. **Làm đủ động tác như video mẫu.** Mỗi ký hiệu có video mẫu riêng, hiện ở góc khung hình khi quay. Video đã lật như gương: làm giống hệt hình, cùng phía tay. Bấm vào video để phóng to.
-3. **Bắt đầu và kết thúc ở tư thế nghỉ:** hai tay chụm nhẹ trước bụng, tư thế chung của hầu hết video mẫu ở mọi ký hiệu. Đếm ngược thì giữ tư thế nghỉ, khung chuyển đỏ mới làm ký hiệu, làm xong đưa tay về trước bụng.
+3. **Bắt đầu và kết thúc ở tư thế nghỉ:** hai tay chụm nhẹ trước bụng, tư thế chung của hầu hết video mẫu ở mọi ký hiệu. App chỉ đếm ngược khi thấy hai tay đã về trước bụng; giơ tay sớm trong lúc đếm thì app chờ lại. Khung chuyển đỏ là làm ký hiệu ngay, làm xong đưa tay về trước bụng.
 
 **Cách quay**
 - Mở link bằng **Chrome / Edge / Safari** (laptop) hoặc **Chrome (Android) / Safari (iPhone)**. Nhận link qua Zalo/Messenger thì bấm ⋯ → **Mở bằng trình duyệt**.
 - Nhập tên (đúng một tên cho cả hai buổi), chọn buổi, cho phép camera.
-- Bấm **Bắt đầu quay** (laptop: phím **Space**). Mỗi lượt: đếm ngược 2 giây → khung đỏ khoảng 2,5 giây → tự lưu → tự quay lượt tiếp đến khi đủ, rồi sang ký hiệu sau. Làm sai thì bấm **Xóa lượt cuối** (phím **D**).
+- Bấm **Bắt đầu quay** (laptop: phím **Space**). Mỗi lượt: chờ hai tay về trước bụng → đếm ngược 2 giây → khung đỏ khoảng 2,5 giây → tự lưu → tay về trước bụng thì sang lượt tiếp, đủ lượt thì sang ký hiệu sau. Lượt hết giờ khi tay còn đang làm bị loại ngay để quay lại. Làm sai thì bấm **Xóa lượt cuối** (phím **D**).
 - Không chuyển app hay tab trong lúc quay (lượt đang quay sẽ bị bỏ). Chờ dòng "Mọi lượt đã lưu lên Drive ✓" rồi mới đóng trang.
 - **Buổi 2** quay vào ngày khác, đổi trang phục, nền và ánh sáng.
 
