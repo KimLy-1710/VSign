@@ -69,6 +69,8 @@ App tự hướng dẫn ngay trên màn hình (3 quy tắc có ảnh, video mẫ
 
 **Cách quay**
 - Mở link bằng **Chrome / Edge / Safari** (laptop) hoặc **Chrome (Android) / Safari (iPhone)**. Nhận link qua Zalo/Messenger thì bấm ⋯ → **Mở bằng trình duyệt**.
+- **Tắt mọi hiệu ứng camera** trước khi quay: nền ảo, làm mờ nền, tự động căn khung (Windows Studio Effects / cài đặt camera của laptop), Center Stage (Mac, iPad). Camera tự zoom/lia làm khung hình thay đổi giữa lượt.
+- **Mở lại (tải lại) trang trước mỗi lần quay**, để dùng bản app mới nhất và lấy tiến độ mới nhất từ Drive.
 - Nhập tên (đúng một tên cho cả hai buổi), chọn buổi, cho phép camera.
 - Bấm **Bắt đầu quay** (laptop: phím **Space**). Mỗi lượt: chờ hai tay về trước bụng → đếm ngược 2 giây → khung đỏ: làm ký hiệu → đưa tay về trước bụng là lượt kết thúc và tự lưu → sang lượt tiếp, đủ lượt thì sang ký hiệu sau. Độ dài lượt theo người quay (từ app bản 4): làm chậm vẫn được ghi trọn. Lượt bị loại ngay nếu 3,5 giây chưa thấy làm ký hiệu, hoặc quá 6 giây tay chưa về trước bụng. Làm sai thì bấm **Xóa lượt cuối** (phím **D**).
 - Không chuyển app hay tab trong lúc quay (lượt đang quay sẽ bị bỏ). Chờ dòng "Mọi lượt đã lưu lên Drive ✓" rồi mới đóng trang.
