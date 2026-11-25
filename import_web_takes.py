@@ -1,7 +1,8 @@
 """Nhập các lượt quay từ web app (webapp/) vào dữ liệu huấn luyện.
 
 Web app tải mỗi lượt lên Google Drive thành một file zip: 30 ảnh JPEG vuông (00.jpg … 29.jpg, chụp ở
-12 khung/giây, chưa lật gương) và meta.json. Script này trích keypoints bằng đúng MediaPipe Holistic
+12 khung/giây, chưa lật gương) và meta.json; từ app bản 3 có thêm clip video gốc video.webm / video.mp4
+(chưa dùng ở đây, xem meta["video"]). Script này trích keypoints bằng đúng MediaPipe Holistic
 Python dùng cho tập ViSL (keypoints.py), áp cùng ngưỡng với collect_data.py, rồi ghi:
     data/raw/<id>_<slug>/<tên lượt>.npy     (30, 1662), giống collect_data.py
     data/manifest.csv                       thêm một dòng mỗi lượt đạt

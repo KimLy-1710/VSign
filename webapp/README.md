@@ -8,7 +8,8 @@ Trình duyệt thành viên ──(Apps Script)──────────►
   kiểm tra tay/người bằng MediaPipe JS                                                → data/raw, data/manifest.csv
 ```
 
-- Mỗi lượt là một file zip gồm 30 ảnh JPEG 480×480 (chưa lật gương) và `meta.json`, khoảng 0,2–1 MB. Tên file có dạng `<người>_s<buổi>_<id>_<slug>_<thời gian>.zip`.
+- Mỗi lượt là một file zip gồm 30 ảnh JPEG 480×480 (chưa lật gương), `meta.json`, và từ app bản 3 thêm **clip video gốc** `video.webm` (Chrome, Edge, Firefox) hoặc `video.mp4` (Safari, iPhone). Tổng khoảng 1,5–2 MB. Tên file có dạng `<người>_s<buổi>_<id>_<slug>_<thời gian>.zip`.
+- **Clip video:** toàn khung camera (thường 1280×720), không cắt, không lật, ghi từ 1 giây trước khi khung chuyển đỏ đến 1 giây sau khung cuối (≈ 4,5 giây, 2 Mbps). `meta.json` → `video.frame_times_ms` ghi thời điểm của 30 ảnh tính từ đầu clip, để sau này cắt lại cửa sổ thời gian hoặc trích keypoints ở độ phân giải cao hơn. Huấn luyện hiện vẫn chỉ dùng 30 ảnh; `import_web_takes.py` bỏ qua video. Dung lượng ước tính khoảng 0,4 GB mỗi người cho cả hai buổi. Trình duyệt không ghi được video thì lượt vẫn lưu ảnh như cũ. Cấu hình ở `video` trong [`config.js`](config.js).
 - Trên Drive, Apps Script tự chia thư mục theo người quay và buổi quay, nên nhìn số file trong mỗi thư mục là biết ai đã quay đủ chưa (buổi 1: 90 file, buổi 2: 60 file mỗi người). Hai thư mục cho cùng một người với tên khác nhau (ví dụ `tran/` và `baotran/`) nghĩa là người đó đã gõ tên không thống nhất:
   ```
   VSign_uploads/
@@ -36,7 +37,7 @@ Trình duyệt thành viên ──(Apps Script)──────────►
 4. Chọn **Deploy → New deployment → Web app**, đặt *Execute as* là **Me** và *Who has access* là **Anyone**. Cấp quyền khi Google hỏi: script chỉ ghi vào Drive của bạn.
 5. Chép **Web app URL**, có dạng `https://script.google.com/macros/s/…/exec`. Mở URL đó trên trình duyệt: đúng thì thấy `"has_folder_id":true`.
 
-Khi sửa `Code.gs`, chọn **Deploy → Manage deployments → Edit → Version: New version** để giữ nguyên URL. Mở URL `/exec` để xem phiên bản đang chạy (`"version"`).
+Khi sửa `Code.gs`, chọn **Deploy → Manage deployments → Edit → Version: New version** để giữ nguyên URL. Mở URL `/exec` để xem phiên bản đang chạy (`"version"`). Clip video cần `"version": 6` trở lên; với bản cũ hơn, Apps Script bỏ qua video (ảnh vẫn lưu) và web app báo "Máy chủ chưa lưu được video".
 
 ### 2. Cấu hình và đưa web app lên Vercel
 

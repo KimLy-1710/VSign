@@ -5,7 +5,9 @@ import { FilesetResolver, HandLandmarker, PoseLandmarker, DrawingUtils } from
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
 import { CONFIG } from "./config.js";
 
-const APP_VERSION = "2";   // 2: chờ tư thế nghỉ trước mỗi lượt, loại lượt bị cắt khi tay còn đang làm
+const APP_VERSION = "3";   // 2: chờ tư thế nghỉ trước mỗi lượt, loại lượt bị cắt khi tay còn đang làm; 3: thêm clip video gốc
+// Định dạng clip: WebM/VP8 (Chrome, Edge, Firefox; VP8 nhẹ hơn VP9 cho máy yếu), MP4/H.264 (Safari, iPhone).
+const VIDEO_TYPES = ["video/webm;codecs=vp8", "video/webm", "video/mp4;codecs=avc1", "video/mp4"];
 const WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 const HAND_MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task";
 const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task";
@@ -29,6 +31,8 @@ const S = {
   refs: null, refSlug: null, showRef: true,   // video mẫu (references.json)
   shoulder: null, frame: { ok: false, text: "Chưa thấy người" },   // kiểm tra khoảng cách (độ rộng vai, làm mượt)
   rest: { ok: false, wrists: null }, restSince: null, restLostSince: null,   // tư thế nghỉ (hai tay trước bụng)
+  clip: null, frameTimes: [],   // clip video đang ghi của lượt hiện tại, thời điểm chụp từng khung
+  pending: new Set(), cancelled: new Set(),   // lượt đã đạt nhưng clip chưa ghi xong (chưa vào hàng đợi)
 };
 // Trạng thái: idle → waitrest (chờ hai tay về trước bụng và giữ yên) → countdown → recording → waitrest …
 // Mỗi lượt vì thế luôn bắt đầu từ tư thế nghỉ, kể cả khi các lượt nối tiếp nhau.
@@ -145,8 +149,15 @@ const Queue = {
         renderUpload(items.length);
         if (!items.length) break;
         try {
-          await api({ action: "upload", name: items[0].name, meta: items[0].meta, frames: items[0].frames });
-          await this.del(items[0].name);
+          const it = items[0];
+          const res = await api({ action: "upload", name: it.name, meta: it.meta, frames: it.frames,
+            ...(it.video ? { video: it.video, video_type: it.videoType } : {}) });
+          // Apps Script bản cũ (trước VERSION 6) bỏ qua video mà vẫn báo ok → nhắc một lần để nhóm trưởng deploy lại.
+          if (it.video && !res.video_saved && !this.videoWarned) {
+            this.videoWarned = true;
+            say("Máy chủ chưa lưu được video (Apps Script bản cũ). Ảnh vẫn lưu bình thường; báo nhóm trưởng deploy lại Code.gs.", "bad");
+          }
+          await this.del(it.name);
           this.error = ""; this.backoff = 0;
         } catch (e) {
           this.error = e.message;
@@ -249,6 +260,66 @@ function cameraInfo() {
   return { camera: track?.label || (DEMO_SRC ? `demo:${DEMO_SRC}` : ""), source_width: v.videoWidth, source_height: v.videoHeight };
 }
 
+// ---------------------------------------------------------------- clip video gốc (MediaRecorder)
+
+// Ghi thẳng luồng camera (toàn khung, không cắt, không lật). Trình duyệt không hỗ trợ thì trả null: lượt vẫn lưu ảnh như cũ.
+function startClip() {
+  const stream = S.stream || $("video").captureStream?.();   // ?src= (video thử) thì ghi từ thẻ <video>
+  if (!CONFIG.video?.enabled || !stream || typeof MediaRecorder === "undefined") return null;
+  const type = VIDEO_TYPES.find((t) => MediaRecorder.isTypeSupported(t));
+  if (!type) return null;
+  try {
+    const rec = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: CONFIG.video.bitrate });
+    const clip = { rec, type: type.split(";")[0], chunks: [], t0: null };
+    clip.done = new Promise((resolve) => {
+      rec.ondataavailable = (e) => { if (e.data.size) clip.chunks.push(e.data); };
+      rec.onstop = () => resolve(new Blob(clip.chunks, { type: clip.type }));
+      rec.onerror = () => resolve(null);
+    });
+    rec.onstart = () => { clip.t0 = performance.now(); };   // mốc gần đúng của khung video đầu tiên
+    rec.start();
+    return clip;
+  } catch { return null; }
+}
+
+function discardClip() {
+  const clip = S.clip;
+  S.clip = null;
+  if (clip && clip.rec.state !== "inactive") clip.rec.stop();
+}
+
+// Ghi thêm delayMs sau khung cuối rồi dừng; trả base64 + thông tin, hoặc null nếu ghi lỗi.
+async function finishClip(clip, delayMs) {
+  await new Promise((r) => setTimeout(r, delayMs));
+  if (clip.rec.state !== "inactive") clip.rec.stop();
+  const blob = await clip.done;
+  if (!blob?.size || clip.t0 == null) return null;
+  const b64 = await new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result).split(",")[1]);
+    fr.onerror = () => reject(fr.error);
+    fr.readAsDataURL(blob);
+  });
+  return { b64, type: clip.type, bytes: blob.size, t0: clip.t0 };
+}
+
+// Lưu lượt vào hàng đợi sau khi clip ghi xong (thêm postMs). Ghi clip lỗi thì vẫn lưu ảnh.
+async function saveTake(name, meta, frames, clip, frameTimes) {
+  S.pending.add(name);
+  S.saved.push(name);
+  let video = null;
+  if (clip) { try { video = await finishClip(clip, CONFIG.video.postMs); } catch { video = null; } }
+  S.pending.delete(name);
+  if (S.cancelled.delete(name)) return;   // đã bấm Xóa lượt cuối trong lúc clip còn ghi
+  meta.video = video && {
+    type: video.type, bytes: video.bytes, bitrate: CONFIG.video.bitrate,
+    // thời điểm chụp 30 khung tính từ đầu clip (ms, gần đúng ±1 khung) để cắt lại cửa sổ từ video sau này
+    frame_times_ms: frameTimes.map((t) => Math.round(t - video.t0)),
+  };
+  await Queue.add({ name, meta, frames, video: video?.b64, videoType: video?.type });
+  Queue.pump();
+}
+
 // ---------------------------------------------------------------- vòng lặp: cắt vuông → nhận diện → vẽ → quay
 
 function loop() {
@@ -297,22 +368,27 @@ function tick(now, work) {
   }
   if (S.state === "countdown") {
     if (!S.rest.ok && now - S.restLostSince >= CONFIG.restLostMs) {   // giơ tay sớm → chờ lại, không quay lượt bắt đầu giữa chừng
+      discardClip();
       S.state = "waitrest";
       say("Giữ hai tay trước bụng cho đến khi khung chuyển đỏ.", "bad");
       return;
     }
+    // clip video bắt đầu trước khi khung chuyển đỏ preMs để có cả đoạn tư thế nghỉ trước ký hiệu
+    if (!S.clip && CONFIG.video?.enabled && now - S.tState >= CONFIG.countdown * 1000 - CONFIG.video.preMs) S.clip = startClip();
     if (now - S.tState >= CONFIG.countdown * 1000) {
       if (!S.frame.ok) {   // người quay di chuyển trong lúc đếm ngược → dừng, không quay lượt hỏng
+        discardClip();
         Object.assign(S, { running: false, state: "idle" });
         say(`Đã dừng: ${S.frame.text}. Chỉnh lại rồi bấm Bắt đầu quay.`, "bad");
         return;
       }
-      if (!S.rest.ok) { S.state = "waitrest"; return; }
-      Object.assign(S, { state: "recording", frames: [], flags: [], tFirst: now, tNext: now });
+      if (!S.rest.ok) { discardClip(); S.state = "waitrest"; return; }
+      Object.assign(S, { state: "recording", frames: [], flags: [], frameTimes: [], tFirst: now, tNext: now });
     }
   }
   if (S.state !== "recording" || now < S.tNext) return;
   S.tNext += 1000 / CONFIG.fps;
+  S.frameTimes.push(now);
   S.frames.push(work.toDataURL("image/jpeg", CONFIG.jpegQuality).split(",")[1]);   // ảnh gốc, CHƯA lật gương
   S.flags.push([S.handOn, S.poseOn, S.lastShoulder, S.rest.ok, S.rest.wrists]);
   if (S.frames.length < CONFIG.frames) return;
@@ -327,9 +403,11 @@ async function finishTake(now) {
   const widths = S.flags.map((f) => f[2]).filter((w) => w != null).sort((a, b) => a - b);
   const shoulder = widths.length ? widths[Math.floor(widths.length / 2)] : null;   // trung vị cả lượt
   const { endRest, endSpeed } = takeEnding(S.flags);
-  const frames = S.frames;
+  const frames = S.frames, frameTimes = S.frameTimes, clip = S.clip;
   S.frames = [];
+  S.clip = null;
   S.state = "idle";
+  let saved = false;
   if (fps < CONFIG.minFps) say(`Loại: máy chỉ chụp được ${fps.toFixed(1)} khung/giây (cần ${CONFIG.fps}). Đóng bớt tab/ứng dụng rồi quay lại`, "bad");
   else if (handRatio < CONFIG.minHandRatio) say(`Loại: chỉ thấy tay ở ${Math.round(handRatio * 100)}% số khung, quay lại`, "bad");
   else if (poseRatio < CONFIG.minPoseRatio) say(`Loại: chỉ thấy người ở ${Math.round(poseRatio * 100)}% số khung, quay lại`, "bad");
@@ -343,12 +421,12 @@ async function finishTake(now) {
       browser_hand_ratio: +handRatio.toFixed(2), browser_pose_ratio: +poseRatio.toFixed(2), browser_shoulder_width: shoulder == null ? null : +shoulder.toFixed(3),
       browser_start_rest: !!S.flags[0]?.[3], browser_end_rest: endRest, browser_end_speed: +endSpeed.toFixed(3),
       ...cameraInfo(), user_agent: navigator.userAgent, app_version: APP_VERSION };
-    await Queue.add({ name, meta, frames });
-    S.saved.push(name);
+    saveTake(name, meta, frames, clip, frameTimes);   // không chờ: clip còn ghi thêm postMs rồi mới vào hàng đợi
+    saved = true;
     S.counts[l.id] = mine(l) + 1;
     say(`Đã lưu lượt ${mine(l)}/${S.quota} ✓ Đưa tay về trước bụng`, "ok");
-    Queue.pump();
   }
+  if (!saved && clip && clip.rec.state !== "inactive") clip.rec.stop();   // lượt bị loại: bỏ clip
   if (S.running && mine(l) < S.quota) S.state = "waitrest";   // lượt sau chỉ bắt đầu khi tay đã về trước bụng
   else if (S.running) {
     S.running = false;
@@ -481,6 +559,7 @@ function toggle() {
     if (!S.frame.ok) return say(`Chưa quay được: ${S.frame.text}.`, "bad");
     Object.assign(S, { running: true, state: "waitrest" });
   } else {
+    discardClip();
     Object.assign(S, { running: false, state: "idle", frames: [] });
     say("Tạm dừng, lượt đang quay dở đã bỏ.");
   }
@@ -490,7 +569,8 @@ async function undo() {
   const name = S.saved.pop();
   if (!name) return say("Phiên này chưa lưu lượt nào.");
   try {
-    if (await Queue.has(name)) await Queue.del(name);
+    if (S.pending.has(name)) S.cancelled.add(name);   // clip còn đang ghi: huỷ trước khi vào hàng đợi
+    else if (await Queue.has(name)) await Queue.del(name);
     else await api({ action: "delete", name: name + ".zip" });
     const id = +name.match(/_s[12]_(\d{2})_/)[1];
     S.counts[id] = Math.max(0, (S.counts[id] || 1) - 1);
@@ -577,6 +657,7 @@ async function keepAwake() {
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden && !$("studio").hidden) keepAwake();
   if (document.hidden && S.state !== "idle") {   // ẩn tab giữa chừng làm nhịp chụp sai → bỏ lượt đang quay
+    discardClip();
     Object.assign(S, { running: false, state: "idle", frames: [] });
     say("Đã tạm dừng vì rời khỏi trang. Lượt đang quay dở đã bỏ.");
   }
@@ -609,7 +690,7 @@ async function main() {
   $("undo").onclick = undo;
   $("camera").onchange = (e) => openCamera(e.target.value).catch((x) => say(cameraError(x).split("\n")[0], "bad"));
   $("change").onclick = () => { $("studio").hidden = true; $("setup").hidden = false; $("start").disabled = false; $("start").textContent = "Mở camera và bắt đầu"; };
-  window.addEventListener("beforeunload", (e) => { if (Queue.busy) e.preventDefault(); });
+  window.addEventListener("beforeunload", (e) => { if (Queue.busy || S.pending.size) e.preventDefault(); });
 }
 
 main();
