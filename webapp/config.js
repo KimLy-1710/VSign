@@ -15,13 +15,14 @@ export const CONFIG = {
   restDepth: 0.8,
   restHoldMs: 500,
   restLostMs: 300,         // trong lúc đếm ngược, tay rời tư thế nghỉ quá lâu thì quay lại bước chờ
-  // Loại lượt bị cắt khi tay còn đang làm: khung cuối tay chưa về nghỉ và còn chạy nhanh hơn ngưỡng này
-  // (độ rộng vai mỗi khung). Bị cắt: 0,2–0,6; giữ yên tư thế cuối như Nhà, Trường học: < 0,13.
-  cutSpeed: 0.15,
+  // Độ dài lượt theo người quay: 30 ảnh vẫn chụp trong 2,5 giây đầu, nhưng lượt (và clip video) chỉ kết thúc
+  // khi tay đã làm ký hiệu rồi về lại vị trí nghỉ và giữ yên endRestMs. Đang làm = một cổ tay rời vị trí nghỉ
+  // (đo lúc đếm ngược) hơn activeSw độ rộng vai, cùng ngưỡng với import_web_takes.py.
+  sign: { activeSw: 0.3, endRestMs: 400, noSignMs: 3500, maxMs: 6000 },
   // Clip video gốc của mỗi lượt (toàn khung camera, thường 1280×720, không cắt, không lật), lưu kèm 30 ảnh trong zip.
-  // Bắt đầu preMs trước khi khung chuyển đỏ, dừng postMs sau khung cuối: ≈ 4,5 giây, ~1,1 MB ở 2 Mbps.
-  // Dùng để sau này cắt lại cửa sổ thời gian, lấy toàn khung hoặc độ phân giải cao hơn khi trích keypoints.
-  video: { enabled: true, bitrate: 2_000_000, preMs: 1000, postMs: 1000 },
+  // Bắt đầu preMs trước khi khung chuyển đỏ, dừng postMs sau khi lượt kết thúc (tay đã về nghỉ): thường 4–6 giây,
+  // ~1–1,5 MB ở 2 Mbps. import_web_takes.py cắt ký hiệu từ clip này thành 30 khung giống tập ViSL.
+  video: { enabled: true, bitrate: 2_000_000, preMs: 1000, postMs: 600 },
   quota: { 1: 3, 2: 2 },   // SESSION_QUOTA: số lượt mỗi người cho mỗi ký hiệu
   size: 480,               // cạnh ảnh vuông lưu lại (px)
   jpegQuality: 0.9,

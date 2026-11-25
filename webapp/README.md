@@ -9,7 +9,7 @@ Trình duyệt thành viên ──(Apps Script)──────────►
 ```
 
 - Mỗi lượt là một file zip gồm 30 ảnh JPEG 480×480 (chưa lật gương), `meta.json`, và từ app bản 3 thêm **clip video gốc** `video.webm` (Chrome, Edge, Firefox) hoặc `video.mp4` (Safari, iPhone). Tổng khoảng 1,5–2 MB. Tên file có dạng `<người>_s<buổi>_<id>_<slug>_<thời gian>.zip`.
-- **Clip video:** toàn khung camera (thường 1280×720), không cắt, không lật, ghi từ 1 giây trước khi khung chuyển đỏ đến 1 giây sau khung cuối (≈ 4,5 giây, 2 Mbps). `meta.json` → `video.frame_times_ms` ghi thời điểm của 30 ảnh tính từ đầu clip, để sau này cắt lại cửa sổ thời gian hoặc trích keypoints ở độ phân giải cao hơn. Huấn luyện hiện vẫn chỉ dùng 30 ảnh; `import_web_takes.py` bỏ qua video. Dung lượng ước tính khoảng 0,4 GB mỗi người cho cả hai buổi. Trình duyệt không ghi được video thì lượt vẫn lưu ảnh như cũ. Cấu hình ở `video` trong [`config.js`](config.js).
+- **Clip video:** toàn khung camera (thường 1280×720), không cắt, không lật, ghi từ 1 giây trước khi khung chuyển đỏ đến 0,6 giây sau khi tay về lại trước bụng (thường 4–6 giây, 2 Mbps). `meta.json` → `video.frame_times_ms` ghi thời điểm của 30 ảnh tính từ đầu clip; `browser_sign_ms` là đoạn ký hiệu trình duyệt thấy (ms từ lúc khung chuyển đỏ). **`import_web_takes.py` dùng clip này**: tìm đoạn ký hiệu rồi co giãn về 30 khung giống tập ViSL (xem docstring của script); 30 ảnh chỉ dùng khi lượt không có video. Dung lượng ước tính khoảng 0,4–0,5 GB mỗi người cho cả hai buổi. Trình duyệt không ghi được video thì lượt vẫn lưu ảnh như cũ. Cấu hình ở `video` trong [`config.js`](config.js).
 - Trên Drive, Apps Script tự chia thư mục theo người quay và buổi quay, nên nhìn số file trong mỗi thư mục là biết ai đã quay đủ chưa (buổi 1: 90 file, buổi 2: 60 file mỗi người). Hai thư mục cho cùng một người với tên khác nhau (ví dụ `tran/` và `baotran/`) nghĩa là người đó đã gõ tên không thống nhất:
   ```
   VSign_uploads/
@@ -70,7 +70,7 @@ App tự hướng dẫn ngay trên màn hình (3 quy tắc có ảnh, video mẫ
 **Cách quay**
 - Mở link bằng **Chrome / Edge / Safari** (laptop) hoặc **Chrome (Android) / Safari (iPhone)**. Nhận link qua Zalo/Messenger thì bấm ⋯ → **Mở bằng trình duyệt**.
 - Nhập tên (đúng một tên cho cả hai buổi), chọn buổi, cho phép camera.
-- Bấm **Bắt đầu quay** (laptop: phím **Space**). Mỗi lượt: chờ hai tay về trước bụng → đếm ngược 2 giây → khung đỏ khoảng 2,5 giây → tự lưu → tay về trước bụng thì sang lượt tiếp, đủ lượt thì sang ký hiệu sau. Lượt hết giờ khi tay còn đang làm bị loại ngay để quay lại. Làm sai thì bấm **Xóa lượt cuối** (phím **D**).
+- Bấm **Bắt đầu quay** (laptop: phím **Space**). Mỗi lượt: chờ hai tay về trước bụng → đếm ngược 2 giây → khung đỏ: làm ký hiệu → đưa tay về trước bụng là lượt kết thúc và tự lưu → sang lượt tiếp, đủ lượt thì sang ký hiệu sau. Độ dài lượt theo người quay (từ app bản 4): làm chậm vẫn được ghi trọn. Lượt bị loại ngay nếu 3,5 giây chưa thấy làm ký hiệu, hoặc quá 6 giây tay chưa về trước bụng. Làm sai thì bấm **Xóa lượt cuối** (phím **D**).
 - Không chuyển app hay tab trong lúc quay (lượt đang quay sẽ bị bỏ). Chờ dòng "Mọi lượt đã lưu lên Drive ✓" rồi mới đóng trang.
 - **Buổi 2** quay vào ngày khác, đổi trang phục, nền và ánh sáng.
 
