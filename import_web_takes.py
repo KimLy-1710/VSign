@@ -6,8 +6,9 @@ Script này trích keypoints bằng đúng MediaPipe Holistic Python dùng cho t
 ngưỡng với collect_data.py.
 
 Có clip video (mặc định dùng clip, --frames-only để dùng 30 ảnh như cũ): chạy Holistic trên mọi khung của
-clip, tìm đoạn ký hiệu (cổ tay rời vị trí nghỉ hơn ACTIVE_SW độ rộng vai), rồi đặt cửa sổ quanh đoạn đó
-sao cho, giống tập ViSL, ký hiệu chiếm khoảng 22/30 khung với ~3 khung nghỉ trước và ~5 khung nghỉ sau,
+clip, tìm đoạn ký hiệu (cổ tay, đo so với vai trong cùng khung, rời vị trí nghỉ hơn ACTIVE_SW độ rộng vai ít nhất
+MIN_ACTIVE_S), rồi đặt cửa sổ quanh đoạn đó sao cho, giống tập ViSL, ký hiệu chiếm khoảng 22–23/30 khung với
+~3 khung nghỉ trước và ~4 khung nghỉ sau,
 và lấy 30 khung cách đều theo thời gian (khung gần nhất, không nội suy, như prepare_visl.py). Nhờ vậy
 người làm chậm hay bắt đầu trễ vẫn có trọn ký hiệu. Ký hiệu chạm mép đầu/cuối clip thì loại (bị cắt).
 --review ghi ảnh 30 khung đã chọn của mỗi lượt vào data/web_review/ để duyệt bằng mắt.
@@ -57,13 +58,14 @@ LOG_FIELDS = ["zip", "status", "reason", "file", "hand_ratio", "pose_ratio", "sh
 REJECTED_DIR = "_rejected"
 FRAME_MS = round(1000 / kp.CAPTURE_FPS)   # timestamp cho chế độ VIDEO, giống nhịp chụp của web app
 
-# Cắt từ video. Đo trên 955 mẫu ViSL của 30 ký hiệu (cùng cách đo hoạt động): ký hiệu chiếm trung vị 21–22/30
-# khung, trước đó ~3 khung nghỉ, sau đó ~5 khung nghỉ.
+# Cắt từ video. Đo trên 931 mẫu ViSL của 30 ký hiệu (cùng cách đo hoạt động, theo vai): ký hiệu chiếm trung vị
+# 22/30 khung, trước đó ~3 khung nghỉ, sau đó ~4 khung nghỉ.
 REST_DEPTH = 0.8          # cổ tay thấp hơn đường vai ≥ 0,8 độ rộng vai = tư thế nghỉ (như webapp/config.js)
 ACTIVE_SW = 0.3           # cổ tay rời vị trí nghỉ hơn 0,3 độ rộng vai = đang làm ký hiệu
-LEAD_FRAMES, TAIL_FRAMES = 3, 5
+LEAD_FRAMES, TAIL_FRAMES = 3, 4
 EDGE_S = 0.15             # ký hiệu còn diễn ra trong 0,15 s đầu/cuối clip = bị cắt
 MIN_SIGN_S = 0.3          # ngắn hơn: nhiễu, không phải ký hiệu
+MIN_ACTIVE_S = 0.1        # đợt "rời nghỉ" ngắn hơn (một hai khung nhiễu) không tính là ký hiệu
 
 
 def read_log(path: Path) -> set[str]:
@@ -126,22 +128,42 @@ def read_video(name: str, data: bytes) -> tuple[list[np.ndarray], np.ndarray]:
 
 
 def activity(seq: np.ndarray) -> np.ndarray | None:
-    """Mức rời tư thế nghỉ của mỗi khung: khoảng cách lớn nhất của hai cổ tay so với vị trí nghỉ (trung vị các khung
-    có cả hai cổ tay thấp hơn vai ≥ REST_DEPTH), theo độ rộng vai. None nếu không thấy khung nghỉ nào."""
+    """Mức rời tư thế nghỉ của mỗi khung: khoảng cách lớn nhất của hai cổ tay so với vị trí nghỉ, theo độ rộng vai.
+    Vị trí cổ tay tính so với giữa hai vai trong CÙNG khung (chia cho độ rộng vai của khung đó), nên camera tự zoom/lia
+    (ví dụ tự động căn khung của Windows) hay người hơi lắc không bị tính là làm ký hiệu. Vị trí nghỉ = trung vị các
+    khung có cả hai cổ tay thấp hơn vai ≥ REST_DEPTH. None nếu không thấy khung nghỉ nào."""
     P = seq[:, :kp.N_POSE * 4].reshape(len(seq), kp.N_POSE, 4)
     seen = P[:, 11, 3] > 0
     if seen.sum() < 2:
         return None
-    sw = float(np.median(np.linalg.norm(P[seen, 11, :2] - P[seen, 12, :2], axis=1)))
-    sh_y = (P[:, 11, 1] + P[:, 12, 1]) / 2
-    W = P[:, [15, 16], :2]
-    rest = seen & (((W[:, :, 1] - sh_y[:, None]) / sw).min(1) >= REST_DEPTH)
+    sw = np.linalg.norm(P[:, 11, :2] - P[:, 12, :2], axis=1)
+    sw[~seen | (sw <= 0)] = np.nan
+    rel = (P[:, [15, 16], :2] - ((P[:, 11, :2] + P[:, 12, :2]) / 2)[:, None, :]) / sw[:, None, None]
+    rest = seen & (np.nan_to_num(rel[:, :, 1], nan=-1).min(1) >= REST_DEPTH)
     if rest.sum() < 2:
         return None
-    base = np.median(W[rest], axis=0)
-    a = (np.linalg.norm(W - base, axis=2) / sw).max(1)
+    base = np.nanmedian(rel[rest], axis=0)
+    a = np.linalg.norm(rel - base, axis=2).max(1)
     a[~seen] = np.nan
     return a
+
+
+def active_frames(a: np.ndarray, ts: np.ndarray) -> np.ndarray:
+    """Chỉ số các khung đang làm ký hiệu, bỏ các đợt ngắn hơn MIN_ACTIVE_S (nhiễu nhận diện một hai khung)."""
+    on = np.nan_to_num(a) > ACTIVE_SW
+    keep = np.zeros_like(on)
+    i = 0
+    while i < len(on):
+        if on[i]:
+            j = i
+            while j + 1 < len(on) and on[j + 1]:
+                j += 1
+            if ts[j] - ts[i] >= MIN_ACTIVE_S:
+                keep[i:j + 1] = True
+            i = j + 1
+        else:
+            i += 1
+    return np.flatnonzero(keep)
 
 
 def extract_from_video(video: tuple[str, bytes], model: Path):
@@ -163,7 +185,7 @@ def extract_from_video(video: tuple[str, bytes], model: Path):
     a = activity(feats)
     if a is None:
         return "no_rest_pose", info
-    on = np.flatnonzero(np.nan_to_num(a) > ACTIVE_SW)
+    on = active_frames(a, ts)
     if not len(on):
         return "no_sign", info
     t_on, t_off = ts[on[0]], ts[on[-1]]

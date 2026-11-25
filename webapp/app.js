@@ -5,8 +5,9 @@ import { FilesetResolver, HandLandmarker, PoseLandmarker, DrawingUtils } from
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
 import { CONFIG } from "./config.js";
 
-// 2: chờ tư thế nghỉ trước mỗi lượt; 3: thêm clip video gốc; 4: lượt kết thúc khi tay về lại tư thế nghỉ (độ dài theo người quay)
-const APP_VERSION = "4";
+// 2: chờ tư thế nghỉ trước mỗi lượt; 3: thêm clip video gốc; 4: lượt kết thúc khi tay về lại tư thế nghỉ (độ dài theo người quay);
+// 5: đo cổ tay so với vai (không bị camera tự zoom/lia đánh lừa)
+const APP_VERSION = "5";
 // Định dạng clip: WebM/VP8 (Chrome, Edge, Firefox; VP8 nhẹ hơn VP9 cho máy yếu), MP4/H.264 (Safari, iPhone).
 const VIDEO_TYPES = ["video/webm;codecs=vp8", "video/webm", "video/mp4;codecs=avc1", "video/mp4"];
 const WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
@@ -509,10 +510,12 @@ function measureRest(pr) {
   const l = lm[11], r = lm[12];
   const sw = Math.hypot(l.x - r.x, l.y - r.y);
   if (!(sw > 0.05)) return { ok: false, depth: null, wrists: null };
-  const shY = (l.y + r.y) / 2;
+  const shX = (l.x + r.x) / 2, shY = (l.y + r.y) / 2;
   const wr = [lm[15], lm[16]];
   const depth = Math.min(...wr.map((p) => (p.y - shY) / sw));   // cổ tay cao hơn quyết định
-  return { ok: depth >= CONFIG.restDepth, depth, wrists: wr.map((p) => [p.x / sw, p.y / sw]) };
+  // cổ tay so với giữa hai vai của chính khung này (đơn vị độ rộng vai): camera tự zoom/lia (tự động căn khung
+  // của Windows) hay người hơi lắc không bị tính là đang làm ký hiệu. Giống activity() trong import_web_takes.py.
+  return { ok: depth >= CONFIG.restDepth, depth, wrists: wr.map((p) => [(p.x - shX) / sw, (p.y - shY) / sw]) };
 }
 
 function updateRest(pr, now) {
