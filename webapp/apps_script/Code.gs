@@ -18,16 +18,20 @@
  *   Deploy → New deployment → Web app: Execute as "Me", Who has access "Anyone".
  *
  * API (POST, body là JSON dạng text/plain để trình duyệt không gửi preflight CORS):
- *   {action: "upload", name, meta, frames: [base64 JPEG × 30]}  → {ok, name}
+ *   {action: "upload", name, meta, frames: [base64 JPEG × 30],
+ *    video?: base64, video_type?: "video/webm" | "video/mp4"}  → {ok, name, video_saved}
+ *     Clip video gốc (từ VERSION 6) được lưu chung zip thành video.webm / video.mp4. Không có video vẫn nhận như cũ.
  *   {action: "list", signer, session}                           → {ok, names: [...]}
  *   {action: "delete", name}                                    → {ok}   (chỉ lượt tải lên chưa quá DELETE_WINDOW_MIN phút)
  */
 
-var VERSION = 5;
+var VERSION = 6;   // 6: nhận clip video gốc kèm mỗi lượt
 var NAME_RE = /^([a-z0-9]+)_s([12])_\d{2}_[a-z0-9_]+_\d{8}-\d{6}-\d{3}$/;   // nhóm 1: người quay, nhóm 2: buổi
 var FRAMES = 30;
 var MAX_FRAME_B64 = 400000;     // ~300 KB mỗi ảnh; ảnh 480×480 của web app thường 20–60 KB
 var DELETE_WINDOW_MIN = 15;
+var MAX_VIDEO_B64 = 16000000;   // ~12 MB; clip 4,5 giây ở 2 Mbps thường ~1,1 MB
+var VIDEO_EXT = {"video/webm": "webm", "video/mp4": "mp4"};
 
 function doPost(e) {
   try {
@@ -59,17 +63,29 @@ function upload(folder, req) {
   for (var i = 0; i < req.frames.length; i++) {
     if (typeof req.frames[i] !== "string" || req.frames[i].length > MAX_FRAME_B64) return {ok: false, error: "Ảnh không hợp lệ"};
   }
+  var video = null;
+  if (req.video != null) {
+    var ext = VIDEO_EXT[req.video_type];
+    if (!ext || typeof req.video !== "string" || req.video.length > MAX_VIDEO_B64) return {ok: false, error: "Video không hợp lệ"};
+    var vb = Utilities.base64Decode(req.video);
+    // WebM bắt đầu bằng 1A 45 DF A3 (EBML); MP4 có "ftyp" ở byte 4–7. Bytes trong Apps Script là số có dấu.
+    var isWebm = vb.length > 4 && vb[0] === 0x1A && vb[1] === 0x45 && vb[2] === -33 && vb[3] === -93;
+    var isMp4 = vb.length > 8 && String.fromCharCode(vb[4], vb[5], vb[6], vb[7]) === "ftyp";
+    if (!(ext === "webm" ? isWebm : isMp4)) return {ok: false, error: "Video không hợp lệ"};
+    video = Utilities.newBlob(vb, req.video_type, "video." + ext);
+  }
   var zipName = req.name + ".zip";
-  if (findTake(folder, req.name)) return {ok: true, name: zipName, duplicate: true};  // gửi lại sau lỗi mạng
+  if (findTake(folder, req.name)) return {ok: true, name: zipName, duplicate: true, video_saved: !!video};  // gửi lại sau lỗi mạng
   var blobs = req.frames.map(function (b64, i) {
     var bytes = Utilities.base64Decode(b64);
     if (bytes.length < 3 || bytes[0] !== -1 || bytes[1] !== -40) throw new Error("Ảnh không phải JPEG");  // FF D8
     return Utilities.newBlob(bytes, "image/jpeg", ("0" + i).slice(-2) + ".jpg");
   });
   blobs.push(Utilities.newBlob(JSON.stringify(req.meta || {}, null, 2), "application/json", "meta.json"));
+  if (video) blobs.push(video);
   var m = req.name.match(NAME_RE);
   takeFolder(folder, m[1], m[2], true).createFile(Utilities.zip(blobs, zipName));
-  return {ok: true, name: zipName};
+  return {ok: true, name: zipName, video_saved: !!video};
 }
 
 function list(folder, req) {
