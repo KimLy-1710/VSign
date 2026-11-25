@@ -64,7 +64,7 @@ App tự hướng dẫn ngay trên màn hình (3 quy tắc có ảnh, video mẫ
 
 **3 quy tắc**
 1. **Đủ xa:** thấy từ đầu đến thắt lưng, cả hai tay luôn trong khung. Laptop: đẩy máy ra xa hoặc lùi ghế, khoảng 1 m. Điện thoại: dựng cố định, camera trước, cách 1–1,5 m. App báo **"Khoảng cách: tốt"** mới cho quay; quá gần sẽ báo **"Lùi ra xa"**.
-2. **Làm đủ động tác như video mẫu.** Mỗi ký hiệu có video mẫu riêng, hiện ở góc khung hình khi quay. Video đã lật như gương: làm giống hệt hình, cùng phía tay. Bấm vào video để phóng to.
+2. **Làm đủ động tác như video mẫu.** Mỗi ký hiệu có video mẫu riêng, hiện ở góc khung hình khi quay. Video đã lật như gương: làm giống hệt hình, cùng phía tay. Bấm vào video để phóng to. **Tốc độ:** làm như khi nói chuyện bình thường, theo nhịp video mẫu: không cần làm chậm cho rõ, cũng không cần vội. Mỗi người nhanh chậm khác nhau một chút là tốt cho mô hình; app chỉ nhắc nhẹ (vẫn lưu lượt) khi ký hiệu dài hơn hẳn video mẫu hoặc bắt đầu trễ hơn 1 giây sau khung đỏ.
 3. **Bắt đầu và kết thúc ở tư thế nghỉ:** hai tay chụm nhẹ trước bụng, tư thế chung của hầu hết video mẫu ở mọi ký hiệu. App chỉ đếm ngược khi thấy hai tay đã về trước bụng; giơ tay sớm trong lúc đếm thì app chờ lại. Khung chuyển đỏ là làm ký hiệu ngay, làm xong đưa tay về trước bụng.
 
 **Cách quay**

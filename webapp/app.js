@@ -409,6 +409,15 @@ function tick(now, work) {
   else if (elapsed >= CONFIG.sign.maxMs) finishTake(now, "toolong");
 }
 
+// Nhắc nhẹ về nhịp (lượt vẫn lưu): bắt đầu trễ, hoặc ký hiệu dài hơn hẳn video mẫu của ký hiệu này.
+function paceHint(sign) {
+  if (!sign || !CONFIG.nudge) return "";
+  if (sign[0] > CONFIG.nudge.lateStartMs) return "Lần sau khung chuyển đỏ là làm ngay nhé";
+  const ref = $("ref").duration;   // video mẫu của ký hiệu hiện tại (giây), NaN nếu chưa tải xong
+  if (ref > 0 && (sign[1] - sign[0]) / 1000 > CONFIG.nudge.slowRatio * ref) return "Hơi chậm so với video mẫu, thử làm tự nhiên hơn";
+  return "";
+}
+
 // Khoảng cách lớn nhất của hai cổ tay so với vị trí nghỉ, theo độ rộng vai (giống activity() trong import_web_takes.py).
 function signActivity() {
   const w = S.rest.wrists, b = S.restBase;
@@ -449,7 +458,7 @@ async function finishTake(now, ending) {
     saveTake(name, meta, frames, clip, frameTimes);   // không chờ: clip còn ghi thêm postMs rồi mới vào hàng đợi
     saved = true;
     S.counts[l.id] = mine(l) + 1;
-    say(`Đã lưu lượt ${mine(l)}/${S.quota} ✓ Đưa tay về trước bụng`, "ok");
+    say(`Đã lưu lượt ${mine(l)}/${S.quota} ✓ ${paceHint(sign) || "Đưa tay về trước bụng"}`, "ok");
   }
   if (!saved && clip && clip.rec.state !== "inactive") clip.rec.stop();   // lượt bị loại: bỏ clip
   if (S.running && mine(l) < S.quota) S.state = "waitrest";   // lượt sau chỉ bắt đầu khi tay đã về trước bụng

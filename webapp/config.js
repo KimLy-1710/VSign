@@ -19,6 +19,9 @@ export const CONFIG = {
   // khi tay đã làm ký hiệu rồi về lại vị trí nghỉ và giữ yên endRestMs. Đang làm = một cổ tay rời vị trí nghỉ
   // (đo lúc đếm ngược) hơn activeSw độ rộng vai, cùng ngưỡng với import_web_takes.py.
   sign: { activeSw: 0.3, endRestMs: 400, noSignMs: 3500, maxMs: 6000 },
+  // Nhắc nhẹ sau khi lưu (không loại lượt): ký hiệu dài hơn slowRatio × độ dài video mẫu (cả clip, kể cả đoạn nghỉ),
+  // hoặc bắt đầu trễ hơn lateStartMs sau khi khung chuyển đỏ. Video mẫu dài 1,6–3,1 s, trung vị 2,25 s.
+  nudge: { slowRatio: 1.3, lateStartMs: 1000 },
   // Clip video gốc của mỗi lượt (toàn khung camera, thường 1280×720, không cắt, không lật), lưu kèm 30 ảnh trong zip.
   // Bắt đầu preMs trước khi khung chuyển đỏ, dừng postMs sau khi lượt kết thúc (tay đã về nghỉ): thường 4–6 giây,
   // ~1–1,5 MB ở 2 Mbps. import_web_takes.py cắt ký hiệu từ clip này thành 30 khung giống tập ViSL.
