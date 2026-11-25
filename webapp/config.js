@@ -10,6 +10,14 @@ export const CONFIG = {
   minPoseRatio: 0.8,
   minShoulder: 0.22,       // độ rộng vai / cạnh khung vuông; ViSL: trung vị 0,33, 5–95% là 0,29–0,42
   maxShoulder: 0.48,       // lớn hơn = quá gần (mất tay và thân), như lượt thử đầu tiên (0,62–0,66)
+  // Tư thế nghỉ: chỉ đếm ngược và bắt đầu quay khi hai cổ tay đã hạ thấp hơn vai ít nhất restDepth × độ rộng vai
+  // và giữ yên restHoldMs. Đo trên lượt thật: tay chụm trước bụng ≈ 1,1; đang làm ký hiệu thường < 0,5.
+  restDepth: 0.8,
+  restHoldMs: 500,
+  restLostMs: 300,         // trong lúc đếm ngược, tay rời tư thế nghỉ quá lâu thì quay lại bước chờ
+  // Loại lượt bị cắt khi tay còn đang làm: khung cuối tay chưa về nghỉ và còn chạy nhanh hơn ngưỡng này
+  // (độ rộng vai mỗi khung). Bị cắt: 0,2–0,6; giữ yên tư thế cuối như Nhà, Trường học: < 0,13.
+  cutSpeed: 0.15,
   quota: { 1: 3, 2: 2 },   // SESSION_QUOTA: số lượt mỗi người cho mỗi ký hiệu
   size: 480,               // cạnh ảnh vuông lưu lại (px)
   jpegQuality: 0.9,
